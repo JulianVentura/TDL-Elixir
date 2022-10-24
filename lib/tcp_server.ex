@@ -24,7 +24,7 @@ defmodule TCPServer do
   defp serve(socket, agent) do
     # write_line(read_line(socket), socket)
     line = read_line(socket)
-    {number, rest} = Integer.parse(String.slice(line, 0..-2))
+    {number, _} = Integer.parse(String.slice(line, 0..-2))
 
     AgentBucket.sendValue(agent, number)
     number = AgentBucket.getValue(agent)
