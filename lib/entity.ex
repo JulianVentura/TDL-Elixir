@@ -24,9 +24,8 @@ defmodule Entity do
 
     {:ok, pid} =
       Agent.start_link(
-        fn -> state end,
+        fn -> state end
         # Name is an atom that we can use to identify the Process without its PID. This is hardcoded, should be dynamic
-        name: TestEntity
       )
 
     pid
@@ -48,6 +47,7 @@ defmodule Entity do
     damage = max(0, health - amount * multiplier)
 
     _update_state(entity, :health, damage)
+    # Devuelve la nueva vida, no el daño recibido
     damage
   end
 

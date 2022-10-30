@@ -24,12 +24,48 @@ defmodule Room do
 
     {:ok, pid} =
       Agent.start_link(
-        fn -> state end,
+        fn -> state end
         # Name is an atom that we can use to identify the Process without its PID. This is hardcoded, should be dynamic
-        name: TestRoom
       )
 
     pid
+  end
+
+  @spec attack_enemie(id, id, id, integer) :: integer
+  def attack_enemie(room, player, enemie, amount) do
+    %{
+      enemies: enemies,
+      players: players
+    } = _get_state(room)
+
+    damage =
+      if enemie in enemies and player in players do
+        Entity.attack(enemie, amount, Entity.get_state(player).stance)
+      else
+        -1
+      end
+
+    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
+
+    damage
+  end
+
+  @spec attack_player(id, id, id, integer) :: integer
+  def attack_player(room, enemie, player, amount) do
+    %{
+      enemies: enemies,
+      players: players
+    } = _get_state(room)
+
+    damage =
+      if enemie in enemies and player in players do
+        Entity.attack(player, amount, Entity.get_state(enemie).stance)
+      else
+        -1
+      end
+
+    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
+    damage
   end
 
   @spec get_state(id) :: State.t()
