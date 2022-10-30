@@ -1,10 +1,12 @@
 defmodule Room do
   defmodule State do
-    defstruct [:enemies, :players]
+    defstruct [:enemies, :players, :turn, :turn_order]
 
     @type t() :: %__MODULE__{
             enemies: list | nil,
-            players: list | nil
+            players: list | nil,
+            turn: atom | nil,
+            turn_order: map | nil
           }
   end
 
@@ -14,13 +16,15 @@ defmodule Room do
   @type enemies :: list
   @type players :: list
   @type id :: pid | atom
+  @type turn :: atom
+  @type turn_order :: map
 
   @type key :: atom
-  @type state_attribute :: enemies | players
+  @type state_attribute :: enemies | players | turn | turn_order
 
   @spec start_link() :: pid
   def start_link() do
-    state = %State{enemies: [], players: []}
+    state = %State{enemies: [], players: [], turn: :player, turn_order: %{}}
 
     {:ok, pid} =
       Agent.start_link(
@@ -34,38 +38,102 @@ defmodule Room do
   @spec attack_enemie(id, id, id, integer) :: integer
   def attack_enemie(room, player, enemie, amount) do
     %{
-      enemies: enemies,
-      players: players
+      turn: turn,
+      turn_order: turn_order,
+      players: players,
+      enemies: enemies
     } = _get_state(room)
 
-    damage =
-      if enemie in enemies and player in players do
-        Entity.attack(enemie, amount, Entity.get_state(player).stance)
+    if turn == :player and turn_order[player] do
+      health = _attack(room, enemie, player, :player, amount)
+      turn_order = Map.put(turn_order, player, false)
+      change_turn = List.foldl(players, true, fn x, acc -> acc and not turn_order[x] end)
+
+      if change_turn do
+        _update_state(room, :turn, :enemie)
+
+        turn_order = for e <- enemies, into: turn_order, do: {e, true}
+        _update_state(room, :turn_order, turn_order)
       else
-        -1
+        _update_state(room, :turn_order, turn_order)
       end
 
-    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
-
-    damage
+      health
+    else
+      -1
+    end
   end
 
   @spec attack_player(id, id, id, integer) :: integer
   def attack_player(room, enemie, player, amount) do
     %{
+      turn: turn,
+      turn_order: turn_order,
+      players: players,
+      enemies: enemies
+    } = _get_state(room)
+
+    if turn == :enemie and turn_order[enemie] do
+      health = _attack(room, enemie, player, :enemie, amount)
+      turn_order = Map.put(turn_order, enemie, false)
+      change_turn = List.foldl(enemies, true, fn x, acc -> acc and not turn_order[x] end)
+
+      if change_turn do
+        _update_state(room, :turn, :player)
+
+        turn_order = for p <- players, into: turn_order, do: {p, true}
+        _update_state(room, :turn_order, turn_order)
+      else
+        _update_state(room, :turn_order, turn_order)
+      end
+
+      health
+    else
+      -1
+    end
+  end
+
+  @spec _attack(id, id, id, atom, integer) :: integer
+  def _attack(room, enemie, player, direction, amount) do
+    %{
       enemies: enemies,
       players: players
     } = _get_state(room)
 
-    damage =
-      if enemie in enemies and player in players do
-        Entity.attack(player, amount, Entity.get_state(enemie).stance)
+    # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
+    defendant =
+      if direction == :player do
+        enemie
       else
+        player
+      end
+
+    attacker =
+      if direction == :player do
+        player
+      else
+        enemie
+      end
+
+    health =
+      if enemie in enemies and player in players do
+        Entity.attack(defendant, amount, Entity.get_state(attacker).stance)
+      else
+        # Si no estan en la sala no deberian poder atacarse
         -1
       end
 
     # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
-    damage
+
+    if health == 0 do
+      if direction == :player do
+        _update_state(room, :enemies, List.delete(enemies, enemie))
+      else
+        _update_state(room, :players, List.delete(players, player))
+      end
+    end
+
+    health
   end
 
   @spec get_state(id) :: State.t()
@@ -77,11 +145,21 @@ defmodule Room do
   def add_player(room, player) do
     %{
       players: players,
-      enemies: _enemies
+      enemies: _enemies,
+      turn_order: turn_order,
+      turn: turn
     } = _get_state(room)
 
     players = players ++ [player]
 
+    turn_order =
+      Map.put(
+        turn_order,
+        player,
+        turn == :player
+      )
+
+    _update_state(room, :turn_order, turn_order)
     _update_state(room, :players, players)
   end
 
@@ -89,11 +167,21 @@ defmodule Room do
   def add_enemie(room, enemie) do
     %{
       players: _players,
-      enemies: enemies
+      enemies: enemies,
+      turn: turn,
+      turn_order: turn_order
     } = _get_state(room)
 
     enemies = enemies ++ [enemie]
 
+    turn_order =
+      Map.put(
+        turn_order,
+        enemie,
+        turn == :enemie
+      )
+
+    _update_state(room, :turn_order, turn_order)
     _update_state(room, :enemies, enemies)
   end
 
