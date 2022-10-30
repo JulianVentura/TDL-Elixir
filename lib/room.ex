@@ -46,18 +46,7 @@ defmodule Room do
 
     if turn == :player and turn_order[player] do
       health = _attack(room, enemie, player, :player, amount)
-      turn_order = Map.put(turn_order, player, false)
-      change_turn = List.foldl(players, true, fn x, acc -> acc and not turn_order[x] end)
-
-      if change_turn do
-        _update_state(room, :turn, :enemie)
-
-        turn_order = for e <- enemies, into: turn_order, do: {e, true}
-        _update_state(room, :turn_order, turn_order)
-      else
-        _update_state(room, :turn_order, turn_order)
-      end
-
+      _change_turn(room, player, players, enemies, :enemie)
       health
     else
       -1
@@ -75,18 +64,7 @@ defmodule Room do
 
     if turn == :enemie and turn_order[enemie] do
       health = _attack(room, enemie, player, :enemie, amount)
-      turn_order = Map.put(turn_order, enemie, false)
-      change_turn = List.foldl(enemies, true, fn x, acc -> acc and not turn_order[x] end)
-
-      if change_turn do
-        _update_state(room, :turn, :player)
-
-        turn_order = for p <- players, into: turn_order, do: {p, true}
-        _update_state(room, :turn_order, turn_order)
-      else
-        _update_state(room, :turn_order, turn_order)
-      end
-
+      _change_turn(room, enemie, enemies, players, :player)
       health
     else
       -1
@@ -134,6 +112,25 @@ defmodule Room do
     end
 
     health
+  end
+
+  @spec _change_turn(id, id, list, list, atom) :: :ok
+  def _change_turn(room, attacker, attackees, defendees, turn) do
+    %{
+      turn_order: turn_order
+    } = _get_state(room)
+
+    turn_order = Map.put(turn_order, attacker, false)
+    change_turn = List.foldl(attackees, true, fn x, acc -> acc and not turn_order[x] end)
+
+    if change_turn do
+      _update_state(room, :turn, turn)
+
+      turn_order = for d <- defendees, into: turn_order, do: {d, true}
+      _update_state(room, :turn_order, turn_order)
+    else
+      _update_state(room, :turn_order, turn_order)
+    end
   end
 
   @spec get_state(id) :: State.t()
