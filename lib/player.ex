@@ -62,6 +62,7 @@ defmodule Player do
     _update_state(player, :room, room)
   end
 
+  @spec attack(id, id, integer) :: integer
   def attack(player, enemie, amount) do
     %{
       room: room

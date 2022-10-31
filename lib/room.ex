@@ -169,6 +169,7 @@ defmodule Room do
         turn == :enemie
       )
 
+    Enemie.set_room(enemie, room)
     _update_state(room, :turn_order, turn_order)
     _update_state(room, :enemies, enemies)
   end
@@ -180,6 +181,7 @@ defmodule Room do
       turn_order: turn_order
     } = _get_state(room)
 
+    Enemie.set_room(enemie, nil)
     _update_state(room, :turn_order, Map.delete(turn_order, enemie))
     _update_state(room, :enemies, List.delete(enemies, enemie))
   end
