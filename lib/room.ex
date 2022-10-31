@@ -79,23 +79,13 @@ defmodule Room do
     } = _get_state(room)
 
     # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
-    defendant =
-      if direction == :player do
-        enemie
-      else
-        player
-      end
-
-    attacker =
-      if direction == :player do
-        player
-      else
-        enemie
-      end
-
     health =
       if enemie in enemies and player in players do
-        Entity.attack(defendant, amount, Entity.get_state(attacker).stance)
+        if direction == :player do
+          Enemie.be_attacked(player, amount, Player.get_stance(enemie))
+        else
+          Player.be_attacked(enemie, amount, Enemie.get_stance(player))
+        end
       else
         # Si no estan en la sala no deberian poder atacarse
         -1
@@ -105,9 +95,9 @@ defmodule Room do
 
     if health == 0 do
       if direction == :player do
-        _update_state(room, :enemies, List.delete(enemies, enemie))
+        _remove_enemie(room, enemie)
       else
-        _update_state(room, :players, List.delete(players, player))
+        _remove_player(room, player)
       end
     end
 
@@ -180,6 +170,28 @@ defmodule Room do
 
     _update_state(room, :turn_order, turn_order)
     _update_state(room, :enemies, enemies)
+  end
+
+  @spec _remove_enemie(id, id) :: atom()
+  def _remove_enemie(room, enemie) do
+    %{
+      enemies: enemies,
+      turn_order: turn_order
+    } = _get_state(room)
+
+    _update_state(room, :turn_order, Map.delete(turn_order, enemie))
+    _update_state(room, :enemies, List.delete(enemies, enemie))
+  end
+
+  @spec _remove_player(id, id) :: atom()
+  def _remove_player(room, player) do
+    %{
+      players: players,
+      turn_order: turn_order
+    } = _get_state(room)
+
+    _update_state(room, :turn_order, Map.delete(turn_order, player))
+    _update_state(room, :players, List.delete(players, player))
   end
 
   # Private helper functions
