@@ -1,9 +1,10 @@
 defmodule Player do
   defmodule State do
-    defstruct [:entity]
+    defstruct [:entity, :room]
 
     @type t() :: %__MODULE__{
-            entity: pid | atom | nil
+            entity: pid | atom | nil,
+            room: pid | atom | nil
           }
   end
 
@@ -14,6 +15,7 @@ defmodule Player do
   @type id :: pid | atom
   @type health :: non_neg_integer()
   @type stance :: atom
+  @type room :: pid | atom
 
   @type key :: atom
   @type state_attribute :: entity
@@ -21,7 +23,7 @@ defmodule Player do
   @spec start_link(health, stance) :: pid
   def start_link(health, initial_stance) do
     entity = Entity.start_link(health, initial_stance)
-    state = %State{entity: entity}
+    state = %State{entity: entity, room: nil}
 
     {:ok, pid} =
       Agent.start_link(
@@ -53,6 +55,19 @@ defmodule Player do
     } = _get_state(player)
 
     Entity.get_state(entity).stance
+  end
+
+  @spec set_room(id, room) :: atom()
+  def set_room(player, room) do
+    _update_state(player, :room, room)
+  end
+
+  def attack(player, enemie, amount) do
+    %{
+      room: room
+    } = _get_state(player)
+
+    Room.attack_enemie(room, player, enemie, amount)
   end
 
   # Private helper functions
