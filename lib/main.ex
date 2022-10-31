@@ -21,10 +21,4 @@ defmodule Main do
   IO.inspect(Room.get_state(room))
   IO.inspect(Player.attack(player2, enemie2, 10))
   IO.inspect(Room.get_state(room))
-  IO.inspect(Enemie.attack(enemie1, player1, 1000))
-  IO.inspect(Room.get_state(room))
-  IO.inspect(Enemie.attack(enemie2, player1, 10))
-  IO.inspect(Room.get_state(room))
-
-  IO.inspect(Player.get_state(player1))
 end

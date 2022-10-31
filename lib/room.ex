@@ -118,6 +118,15 @@ defmodule Room do
 
       turn_order = for d <- defendees, into: turn_order, do: {d, true}
       _update_state(room, :turn_order, turn_order)
+
+      if turn == :enemie do
+        for enemie <- defendees do
+          %{player: player_to_attack, amount: amount} =
+            Enemie.choose_player_to_attack(enemie, attackees)
+
+          attack_player(room, enemie, player_to_attack, amount)
+        end
+      end
     else
       _update_state(room, :turn_order, turn_order)
     end

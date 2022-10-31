@@ -71,6 +71,11 @@ defmodule Enemie do
     Room.attack_player(room, enemie, player, amount)
   end
 
+  @spec choose_player_to_attack(pid, list) :: pid
+  def choose_player_to_attack(enemie, players) do
+    IA.choose_player_to_attack(players, :basic_ia)
+  end
+
   # Private helper functions
 
   @spec _get_state(id) :: State.t()
