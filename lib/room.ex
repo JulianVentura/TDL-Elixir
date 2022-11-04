@@ -1,8 +1,10 @@
 defmodule Room do
+
   defmodule State do
-    defstruct [:enemies, :players, :turn, :turn_order]
+    defstruct [:world, :enemies, :players, :turn, :turn_order]
 
     @type t() :: %__MODULE__{
+            world: World.t(),
             enemies: list | nil,
             players: list | nil,
             turn: atom | nil,
@@ -13,18 +15,20 @@ defmodule Room do
   use Agent
   # Public API
 
+  @type world :: World.t()
   @type enemies :: list
   @type players :: list
   @type id :: pid | atom
+  @type direction :: atom
   @type turn :: atom
   @type turn_order :: map
 
   @type key :: atom
-  @type state_attribute :: enemies | players | turn | turn_order
+  @type state_attribute :: world | enemies | players | turn | turn_order
 
-  @spec start_link() :: pid
-  def start_link() do
-    state = %State{enemies: [], players: [], turn: :player, turn_order: %{}}
+  @spec start_link(world) :: pid
+  def start_link(world) do
+    state = %State{world: world,enemies: [], players: [], turn: :player, turn_order: %{}}
 
     {:ok, pid} =
       Agent.start_link(
@@ -205,6 +209,24 @@ defmodule Room do
     Player.set_room(player, nil)
     _update_state(room, :turn_order, Map.delete(turn_order, player))
     _update_state(room, :players, List.delete(players, player))
+  end
+
+  @spec move(id, id, direction) :: atom()
+  def move(room, player, direction) do
+    %{
+      world: world,
+      enemies: enemies
+    } = _get_state(room)
+
+    if length(enemies) == 0 do
+      next_room = World.get_neighbours(world, room, direction)
+      if next_room != nil do
+        Room._remove_player(room, player)
+        Room.add_player(next_room, player)
+      end
+    else
+      #Error
+    end
   end
 
   # Private helper functions
