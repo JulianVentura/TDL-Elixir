@@ -16,7 +16,8 @@ defmodule Main do
 
   # Luego de un comando para obtener enemigos se devuelve esto
 
-  %{enemies: enemies} = Room.get_state(start_room)
+  current_room = Player.get_state(player1).room
+  %{enemies: enemies} = Room.get_state(current_room)
 
   # Luego de un comando para atacar se llama a esto
 
