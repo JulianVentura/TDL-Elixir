@@ -47,8 +47,26 @@ defmodule Room do
     pid
   end
 
-  @spec attack_enemie(id, id, id, integer) :: integer
-  def attack_enemie(room, player, enemie, amount) do
+  @spec attack(id, id, id, integer) :: integer
+  def attack(room, attacker, defender, amount) do
+    %{
+      players: players,
+      enemies: enemies
+    } = _get_state(room)
+
+    if attacker in players do
+      _attack_enemie(room, attacker, defender, amount)
+    else
+      if attacker in enemies do
+        _attack_player(room, attacker, defender, amount)
+      else
+        -1
+      end
+    end
+  end
+
+  @spec _attack_enemie(id, id, id, integer) :: integer
+  def _attack_enemie(room, player, enemie, amount) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -69,8 +87,8 @@ defmodule Room do
     end
   end
 
-  @spec attack_player(id, id, id, integer) :: integer
-  def attack_player(room, enemie, player, amount) do
+  @spec _attack_player(id, id, id, integer) :: integer
+  def _attack_player(room, enemie, player, amount) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -144,7 +162,7 @@ defmodule Room do
           %{player: player_to_attack, amount: amount} =
             Enemie.choose_player_to_attack(enemie, attackees)
 
-          attack_player(room, enemie, player_to_attack, amount)
+          _attack_player(room, enemie, player_to_attack, amount)
         end
       end
     else

@@ -68,7 +68,7 @@ defmodule Player do
       room: room
     } = _get_state(player)
 
-    Room.attack_enemie(room, player, enemie, amount)
+    Room.attack(room, player, enemie, amount)
   end
 
   # Private helper functions

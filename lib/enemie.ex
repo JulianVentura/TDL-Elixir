@@ -68,7 +68,7 @@ defmodule Enemie do
       room: room
     } = _get_state(enemie)
 
-    Room.attack_player(room, enemie, player, amount)
+    Room.attack(room, enemie, player, amount)
   end
 
   @spec choose_player_to_attack(pid, list) :: pid

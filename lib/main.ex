@@ -33,4 +33,5 @@ defmodule Main do
   IO.inspect(List.first(enemies))
   IO.inspect(Room.get_state(start_room))
   IO.inspect(Process.alive?(List.first(enemies)))
+  IO.inspect(Entity.get_state(Player.get_state(player1).entity))
 end
