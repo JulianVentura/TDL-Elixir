@@ -27,7 +27,10 @@ defmodule Main do
   world = World.start_link()
   start_room = World.get_starting_room(world)
   Room.add_player(start_room, player1)
-  IO.inspect(Player.get_state(player1))
-  Room.move(start_room, player1, :N)
-  IO.inspect(Player.get_state(player1))
+  %{enemies: enemies} = Room.get_state(start_room)
+  IO.inspect(Process.alive?(List.first(enemies)))
+  Player.attack(player1, List.first(enemies), 10)
+  IO.inspect(List.first(enemies))
+  IO.inspect(Room.get_state(start_room))
+  IO.inspect(Process.alive?(List.first(enemies)))
 end

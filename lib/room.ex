@@ -1,5 +1,4 @@
 defmodule Room do
-
   defmodule State do
     defstruct [:world, :enemies, :players, :turn, :turn_order]
 
@@ -28,7 +27,16 @@ defmodule Room do
 
   @spec start_link(world) :: pid
   def start_link(world) do
-    state = %State{world: world,enemies: [], players: [], turn: :player, turn_order: %{}}
+    enemies = EnemyCreator.create_enemies(:basic_room)
+    turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
+
+    state = %State{
+      world: world,
+      enemies: enemies,
+      players: [],
+      turn: :player,
+      turn_order: turn_order
+    }
 
     {:ok, pid} =
       Agent.start_link(
@@ -44,12 +52,16 @@ defmodule Room do
     %{
       turn: turn,
       turn_order: turn_order,
-      players: players,
-      enemies: enemies
+      players: players
     } = _get_state(room)
 
     if turn == :player and turn_order[player] do
       health = _attack(room, enemie, player, :player, amount)
+
+      %{
+        enemies: enemies
+      } = _get_state(room)
+
       _change_turn(room, player, players, enemies, :enemie)
       health
     else
@@ -62,12 +74,16 @@ defmodule Room do
     %{
       turn: turn,
       turn_order: turn_order,
-      players: players,
       enemies: enemies
     } = _get_state(room)
 
     if turn == :enemie and turn_order[enemie] do
       health = _attack(room, enemie, player, :enemie, amount)
+
+      %{
+        players: players
+      } = _get_state(room)
+
       _change_turn(room, enemie, enemies, players, :player)
       health
     else
@@ -86,9 +102,9 @@ defmodule Room do
     health =
       if enemie in enemies and player in players do
         if direction == :player do
-          Enemie.be_attacked(player, amount, Player.get_stance(enemie))
+          Enemie.be_attacked(enemie, amount, Player.get_stance(enemie))
         else
-          Player.be_attacked(enemie, amount, Enemie.get_stance(player))
+          Player.be_attacked(player, amount, Enemie.get_stance(player))
         end
       else
         # Si no estan en la sala no deberian poder atacarse
@@ -194,7 +210,7 @@ defmodule Room do
       turn_order: turn_order
     } = _get_state(room)
 
-    Enemie.set_room(enemie, nil)
+    Enemie.stop(enemie)
     _update_state(room, :turn_order, Map.delete(turn_order, enemie))
     _update_state(room, :enemies, List.delete(enemies, enemie))
   end
@@ -220,12 +236,13 @@ defmodule Room do
 
     if length(enemies) == 0 do
       next_room = World.get_neighbours(world, room, direction)
+
       if next_room != nil do
         Room._remove_player(room, player)
         Room.add_player(next_room, player)
       end
     else
-      #Error
+      # Error
     end
   end
 

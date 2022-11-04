@@ -76,6 +76,11 @@ defmodule Enemie do
     IA.choose_player_to_attack(players, :basic_ia)
   end
 
+  @spec stop(id) :: atom()
+  def stop(enemie) do
+    Agent.stop(enemie)
+  end
+
   # Private helper functions
 
   @spec _get_state(id) :: State.t()
