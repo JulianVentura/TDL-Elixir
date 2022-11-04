@@ -4,34 +4,21 @@ defmodule Main do
   require World
   require Player
 
-  # enemie1 = Enemie.start_link(80, :rock)
-  # enemie2 = Enemie.start_link(90, :paper)
-  # player2 = Player.start_link(110, :scissors)
-  # room = Room.start_link()
-  # room2 = Room.start_link()
-  # Room.add_enemie(room, enemie1)
-  # Room.add_enemie(room, enemie2)
-  # Room.add_player(room, player1)
-  # IO.inspect(Room.get_state(room))
-  # Room.add_player(room2, player2)
-  # IO.inspect(Room.get_state(room2))
-  # IO.inspect(Room.get_state(room))
-  # IO.inspect(Player.get_state(player1))
-  # IO.inspect(Room.get_state(room))
-  # IO.inspect(Player.attack(player1, enemie1, 10))
-  # IO.inspect(Room.get_state(room))
-  # IO.inspect(Player.attack(player2, enemie2, 10))
-  # IO.inspect(Room.get_state(room))
+  # Empieza el server, crea el usuario (por ahora lo harcodeamos asi luego se crearia al conectarse), crea el world y obtiene la start_room
 
   player1 = Player.start_link(100, :paper)
   world = World.start_link()
   start_room = World.get_starting_room(world)
+
+  # Aca se conecta un usuario, se agrega el usuario a la room y se le devuelve el pid del usuario
+
   Room.add_player(start_room, player1)
+
+  # Luego de un comando para obtener enemigos se devuelve esto
+
   %{enemies: enemies} = Room.get_state(start_room)
-  IO.inspect(Process.alive?(List.first(enemies)))
+
+  # Luego de un comando para atacar se llama a esto
+
   Player.attack(player1, List.first(enemies), 10)
-  IO.inspect(List.first(enemies))
-  IO.inspect(Room.get_state(start_room))
-  IO.inspect(Process.alive?(List.first(enemies)))
-  IO.inspect(Entity.get_state(Player.get_state(player1).entity))
 end
