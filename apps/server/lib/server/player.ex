@@ -72,6 +72,15 @@ defmodule Player do
     Room.attack(room, player, enemie, 10)
   end
 
+  @spec move(id, atom) :: integer
+  def move(player, direction) do
+    %{
+      room: room
+    } = _get_state(player)
+
+    Room.move(room, player, direction)
+  end
+
   # Private helper functions
 
   @spec _get_state(id) :: State.t()
