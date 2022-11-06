@@ -20,10 +20,10 @@ defmodule Enemie do
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(health, stance) :: pid
-  def start_link(health, initial_stance) do
+  @spec start_link(health, stance, pid) :: pid
+  def start_link(health, initial_stance, room) do
     entity = Entity.start_link(health, initial_stance)
-    state = %State{entity: entity, room: nil}
+    state = %State{entity: entity, room: room}
 
     {:ok, pid} =
       Agent.start_link(
@@ -33,15 +33,11 @@ defmodule Enemie do
 
     pid
   end
-
-  @spec get_state(id) :: State.t()
+  
   def get_state(enemie) do
-    _get_state(enemie)
-  end
-
-  @spec set_room(id, room) :: atom()
-  def set_room(enemie, room) do
-    _update_state(enemie, :room, room)
+    enemie
+    |> _get_state(:entity)
+    |> Entity.get_state()
   end
 
   @spec be_attacked(id, integer, stance) :: integer
@@ -89,8 +85,8 @@ defmodule Enemie do
   end
 
   @spec _get_state(id, key) :: state_attribute
-  defp _get_state(enemie, key) do
-    Agent.get(enemie, &Map.get(&1, key))
+  defp _get_state(player, key) do
+    Agent.get(player, &Map.get(&1, key))
   end
 
   @spec _update_state(id, key, state_attribute()) :: atom()
@@ -98,8 +94,4 @@ defmodule Enemie do
     Agent.update(enemie, &Map.put(&1, key, value))
   end
 
-  @spec _update_state(id, state_attribute()) :: atom()
-  defp _update_state(enemie, state) do
-    Agent.update(enemie, fn _ -> state end)
-  end
 end

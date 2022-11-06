@@ -34,9 +34,10 @@ defmodule Player do
     pid
   end
 
-  @spec get_state(id) :: State.t()
-  def get_state(player) do
-    _get_state(player)
+  def get_state(id) do
+    id
+    |> _get_state(:entity)
+    |> Entity.get_state()
   end
 
   @spec be_attacked(id, integer, stance) :: integer
@@ -62,13 +63,13 @@ defmodule Player do
     _update_state(player, :room, room)
   end
 
-  @spec attack(id, id, integer) :: integer
-  def attack(player, enemie, amount) do
+  @spec attack(id, id) :: integer
+  def attack(player, enemie) do
     %{
       room: room
     } = _get_state(player)
 
-    Room.attack(room, player, enemie, amount)
+    Room.attack(room, player, enemie, 10)
   end
 
   # Private helper functions

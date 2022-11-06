@@ -27,7 +27,8 @@ defmodule Room do
 
   @spec start_link(world) :: pid
   def start_link(world) do
-    enemies = EnemyCreator.create_enemies(:basic_room)
+    {:ok, pid} = Agent.start_link(fn -> %{} end)
+    enemies = EnemyCreator.create_enemies(:basic_room, pid)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
     state = %State{
@@ -37,12 +38,8 @@ defmodule Room do
       turn: :player,
       turn_order: turn_order
     }
-
-    {:ok, pid} =
-      Agent.start_link(
-        fn -> state end
-        # Name is an atom that we can use to identify the Process without its PID. This is hardcoded, should be dynamic
-      )
+  
+    _update_state(pid, state) 
 
     pid
   end
@@ -53,7 +50,8 @@ defmodule Room do
       players: players,
       enemies: enemies
     } = _get_state(room)
-
+    
+    # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
     if attacker in players do
       _attack_enemie(room, attacker, defender, amount)
     else
@@ -121,14 +119,20 @@ defmodule Room do
       if enemie in enemies and player in players do
         if direction == :player do
           Enemie.be_attacked(enemie, amount, Player.get_stance(enemie))
+          # if health == 0, do: _remove_enemie(room, enemie)
+          # health
         else
           Player.be_attacked(player, amount, Enemie.get_stance(player))
+          # if health == 0, do: _remove_player(room, player)
+          # health
         end
       else
         # Si no estan en la sala no deberian poder atacarse
         -1
       end
-
+    
+    # TODO: El codigo se podría refactorizar a como como está arriba (comentado).
+    # Realmente no hace falta volver a preguntar acá la direction
     # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
 
     if health == 0 do
@@ -216,7 +220,6 @@ defmodule Room do
         turn == :enemie
       )
 
-    Enemie.set_room(enemie, room)
     _update_state(room, :turn_order, turn_order)
     _update_state(room, :enemies, enemies)
   end

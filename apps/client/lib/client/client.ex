@@ -1,4 +1,4 @@
-defmodule Client do
+defmodule Client.Client do
   def game_loop() do
     game_state = ClientProxy.get_state(TempProxy)
     _draw(game_state)
