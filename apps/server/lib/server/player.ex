@@ -33,11 +33,17 @@ defmodule Player do
 
     pid
   end
-
+  
+  
+  @spec get_state(id) :: Entity.State.t()
   def get_state(id) do
     id
     |> _get_state(:entity)
     |> Entity.get_state()
+  end
+
+  def get_room(id) do
+    _get_state(id, :room)
   end
 
   @spec be_attacked(id, integer, stance) :: integer

@@ -38,13 +38,15 @@ defmodule ClientProxy do
 
   @impl true
   def handle_call({:attack, enemy}, _from, {player, room}) do
-    Player.attack(player, enemy) 
+    Player.attack(player, enemy)
     {:reply, :ok, {player, room}}
   end
 
   @impl true
-  def handle_call({:move, direction}, _from, state) do
-    {:reply, direction, state}
+  def handle_call({:move, direction}, _from, {player, _}) do
+    Player.move(player, :N)
+    room = Player.get_room(player)
+    {:reply, direction, {player, room}}
   end
 
   @impl true
@@ -54,12 +56,12 @@ defmodule ClientProxy do
       players: players,
       turn: turn
     } = Room.get_state(room)
-    
+
     state = %{
       :player => player,
       :turn => turn,
       :enemies => _get_entities_state(enemies, &Enemie.get_state/1),
-      :players => _get_entities_state(players, &Player.get_state/1),
+      :players => _get_entities_state(players, &Player.get_state/1)
     }
 
     {:reply, state, {player, room}}
@@ -71,8 +73,16 @@ defmodule ClientProxy do
   # Then ClientProxy could implement a handle_info where it receives the responses
   defp _get_entities_state(entities, callback) do
     entities
-    |> Enum.map(fn entity -> callback.(entity) end)
-    |> Enum.map(fn state -> {state.health, state.stance} end) 
+    |> Enum.map(fn entity -> _serialize_entity_state(entity, callback)end)
+  end
+
+  defp _serialize_entity_state(entity, callback) do
+      state = callback.(entity)
+      {
+        entity,
+        state.health,
+        state.stance
+      }
   end
 
 end

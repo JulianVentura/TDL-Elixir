@@ -8,7 +8,7 @@ defmodule Client.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Task, fn -> Client.Client.game_loop() end}      
+      #{Task, fn -> Client.Client.game_loop() end}      
       # Starts a worker by calling: Client.Worker.start_link(arg)
       # {Client.Worker, arg}
     ]

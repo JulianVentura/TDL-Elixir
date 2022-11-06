@@ -40,7 +40,7 @@ defmodule Client.Client do
 
   defp _attack(enemy) do
     IO.puts("Atacaste #{enemy}\n")
-    ClientProxy.attack(TempProxy, enemy)
+    ClientProxy.attack(TempProxy, IEx.Helpers.pid(enemy))
   end
 
   defp _move(direction) do
