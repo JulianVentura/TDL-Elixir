@@ -1,15 +1,15 @@
 defmodule Client.Client do
-  def game_loop() do
+  def game_loop(last_command \\ nil) do
     game_state = ClientProxy.get_state(TempProxy)
-    _draw(game_state)
+    _draw(game_state, last_command)
 
     command =
       IO.gets(_helper_text())
       |> String.trim()
       |> String.split(" ")
 
-    _process_command(command)
-    game_loop()
+    cmd = _process_command(command)
+    game_loop(cmd)
   end
 
   defp _helper_text() do
@@ -23,9 +23,14 @@ defmodule Client.Client do
     """
   end
 
-  defp _draw(game_state) do
+  defp _draw(game_state, cmd) do
+    IEx.Helpers.clear
     IO.puts("\n--- ESTADO DEL JUEGO ---\n")
     IO.inspect(game_state)
+    if cmd do 
+      IO.puts("\n---- ULTIMO COMANDO ----\n")
+      IO.puts(cmd)
+    end
     IO.puts("\n------------------------\n")
   end
 
@@ -34,18 +39,18 @@ defmodule Client.Client do
       ["attack", enemy] -> _attack(enemy)
       ["move", direction] -> _move(direction)
       ["exit"] -> _exit()
-      _ -> IO.puts("Comando inválido, intenta otra vez")
+      _ -> "Comando inválido, intenta otra vez\n"
     end
   end
 
   defp _attack(enemy) do
-    IO.puts("Atacaste #{enemy}\n")
     ClientProxy.attack(TempProxy, IEx.Helpers.pid(enemy))
+    "Atacaste #{enemy}\n"
   end
 
   defp _move(direction) do
-    IO.puts("Mover a dirección #{direction}")
     ClientProxy.move(TempProxy, direction)
+    "Mover a dirección #{direction}\n"
   end
 
   defp _exit() do
