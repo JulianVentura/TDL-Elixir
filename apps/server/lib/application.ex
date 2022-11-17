@@ -13,6 +13,9 @@ defmodule Server.Application do
       # {Server.Worker, arg}
     ]
 
+    world = World.start_link()
+    room = World.get_starting_room(world)
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Server.Supervisor]

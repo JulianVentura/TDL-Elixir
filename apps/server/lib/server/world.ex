@@ -14,11 +14,11 @@ defmodule World do
   end
 
   def get_neighbours(world, room) do
-    GenServer.call(world, {:get_neighbours, room})
+    GenServer.call(world, {:get_directions, room})
   end
 
   def get_neighbours(world, room, direction) do
-    GenServer.call(world, {:get_neighbours, room, direction})
+    GenServer.call(world, {:get_room, room, direction})
   end
 
   # Handlers
@@ -26,59 +26,56 @@ defmodule World do
   @impl true
   def init(:ok) do
     world = self()
-    graph = :digraph.new()
-    :digraph.add_vertex(graph, "A")
-    :digraph.add_vertex(graph, "B")
-    :digraph.add_vertex(graph, "C")
-    :digraph.add_edge(graph, "A", "B", :N)
-    :digraph.add_edge(graph, "B", "A", :S)
-    :digraph.add_edge(graph, "A", "C", :S)
-    :digraph.add_edge(graph, "C", "A", :N)
+    initial_state = File.stream!("./data/a.txt") 
+    |> Stream.map(fn line -> String.trim(line) end) #Remove \n
+    |> Stream.map(fn line -> String.split(line, ",") end)
+    |> Enum.reduce({:digraph.new(), nil, %{}, %{}},
+      fn args, acc ->
+        {graph, iroom, room_state, pid_to_label} = acc
+        [label, enemies_amount | connections] = args
 
-    {pid_to_label, label_to_pid} = Enum.reduce(["A", "B", "C"], {%{}, %{}},
-      fn label, acc ->
-        {pid_to_label, label_to_pid} = acc
+        iroom = if iroom == nil do
+          label
+        end
+
         room_pid = Room.start_link(world)
-        label_to_pid = Map.put(label_to_pid, label, room_pid)
+        room_state = Map.put(room_state, label, [room_pid, enemies_amount])
         pid_to_label = Map.put(pid_to_label, room_pid, label)
-        {pid_to_label, label_to_pid}
+        :digraph.add_vertex(graph, label)
+
+        graph = Enum.reduce(connections, graph, fn other_label, graph ->
+          :digraph.add_vertex(graph, other_label)
+          :digraph.add_edge(graph, label, other_label)
+          graph
+        end)
+
+        {graph, iroom, room_state, pid_to_label}
       end)
 
-    {:ok, {graph, pid_to_label, label_to_pid}}
+    {:ok, initial_state}
   end
 
   @impl true
-  def handle_call(:get_starting_room, _from, {graph, pid_to_label, label_to_pid}) do
-    {:reply, Map.get(label_to_pid, "A"), {graph, pid_to_label, label_to_pid}}
+  def handle_call(:get_starting_room, _from, {graph, iroom, room_state, pid_to_label}) do
+    [iroom_pid | _] = Map.get(room_state, iroom)
+    {:reply, iroom_pid, {graph, iroom, room_state, pid_to_label}}
   end
 
   @impl true
-  def handle_call({:get_neighbours, room}, _from, {graph, pid_to_label, label_to_pid}) do
+  def handle_call({:get_directions, room}, _from, {graph, iroom, room_state, pid_to_label}) do
     room_label = Map.get(pid_to_label, room)
-    neighbours = []
-    neighbours = for edge <- :digraph.out_edges(graph, room_label) do
-      {_,_,v2,_} = :digraph.edge(graph,edge)
-      neighbour_pid = Map.get(label_to_pid, v2)
-      [neighbour_pid | neighbours]
+    directions = :digraph.out_neighbours(graph, room_label)
+    {:reply, directions, {graph, iroom, room_state, pid_to_label}}
+  end
+
+  @impl true
+  def handle_call({:get_room, room, direction}, _from, {graph, iroom, room_state, pid_to_label}) do
+    room_label = Map.get(pid_to_label, room)
+    next_room_pid = if direction in :digraph.out_neighbours(graph, room_label) do
+      [next_room_pid, _] = Map.get(room_state, direction)
+      next_room_pid
     end
-    {:reply, neighbours, {graph, pid_to_label, label_to_pid}}
+    {:reply, next_room_pid, {graph, iroom, room_state, pid_to_label}}
   end
-
-  @impl true
-  def handle_call({:get_neighbours, room, direction}, _from, {graph, pid_to_label, label_to_pid}) do
-    room_label = Map.get(pid_to_label, room)
-    neighbour = Enum.reduce(
-      :digraph.out_edges(graph, room_label),
-      nil,
-      fn edge, acc ->
-        {_,_,v2,label} = :digraph.edge(graph,edge)
-        if label == direction do
-          Map.get(label_to_pid, v2)
-        else
-          acc
-        end
-      end
-    )
-    {:reply, neighbour, {graph, pid_to_label, label_to_pid}}
-  end
+  
 end

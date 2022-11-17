@@ -30,7 +30,6 @@ defmodule ClientProxy do
     room = World.get_starting_room(world)
 
     # Aca se conecta un usuario, se agrega el usuario a la room y se le devuelve el pid del usuario
-
     Room.add_player(room, player)
 
     {:ok, {player, room}}
