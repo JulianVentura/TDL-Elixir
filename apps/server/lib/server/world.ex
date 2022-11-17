@@ -38,7 +38,9 @@ defmodule World do
           label
         end
 
-        room_pid = Room.start_link(world)
+        {enemies_amount, _} = Integer.parse(enemies_amount)
+
+        room_pid = Room.start_link(world, enemies_amount)
         room_state = Map.put(room_state, label, [room_pid, enemies_amount])
         pid_to_label = Map.put(pid_to_label, room_pid, label)
         :digraph.add_vertex(graph, label)
@@ -51,7 +53,6 @@ defmodule World do
 
         {graph, iroom, room_state, pid_to_label}
       end)
-
     {:ok, initial_state}
   end
 

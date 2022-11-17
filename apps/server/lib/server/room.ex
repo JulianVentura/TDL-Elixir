@@ -25,10 +25,10 @@ defmodule Room do
   @type key :: atom
   @type state_attribute :: world | enemies | players | turn | turn_order
 
-  @spec start_link(world) :: pid
-  def start_link(world) do
+  @spec start_link(world, integer) :: pid
+  def start_link(world, enemies_amount) do
     {:ok, pid} = Agent.start_link(fn -> %{} end)
-    enemies = EnemyCreator.create_enemies(:basic_room, pid)
+    enemies = EnemyCreator.create_enemies(:basic_room, pid, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
     state = %State{
