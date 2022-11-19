@@ -33,8 +33,8 @@ defmodule Room do
     room
   end
 
-  def attack(room, attacker, defender, amount) do
-    GenServer.call(room, {:attack, attacker, defender, amount, room})
+  def attack(room, attacker, defender, amount, stance) do
+    GenServer.call(room, {:attack, attacker, defender, amount, room, stance})
   end
 
   def move(room, player, direction) do
@@ -75,8 +75,8 @@ defmodule Room do
   end
 
   @impl true
-  def handle_call({:attack, attacker, defender, amount, room}, _from, state) do
-    state = _attack_handler(attacker, defender, amount, room, state)
+  def handle_call({:attack, attacker, defender, amount, room, stance}, _from, state) do
+    state = _attack_handler(attacker, defender, amount, room, state, stance)
     {:reply, state, state}
   end
 
@@ -157,13 +157,13 @@ defmodule Room do
 
   @impl true
   def handle_cast({:attack, attacker, defender, amount, room}, state) do
-    new_state = _attack_handler(attacker, defender, amount, room, state)
+    new_state = _attack_handler(attacker, defender, amount, room, state, nil)
     {:noreply, new_state}
   end
 
   # Private functions
 
-  def _attack_handler(attacker, defender, amount, room, state) do
+  def _attack_handler(attacker, defender, amount, room, state, stance) do
     %{
       players: players,
       enemies: enemies
@@ -171,7 +171,7 @@ defmodule Room do
 
     # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
     if attacker in players do
-      _attack_enemie(attacker, defender, amount, state, room)
+      _attack_enemie(attacker, defender, amount, state, room, stance)
     else
       if attacker in enemies do
         _attack_player(attacker, defender, amount, state, room)
@@ -181,7 +181,7 @@ defmodule Room do
     end
   end
 
-  def _attack_enemie(player, enemie, amount, state, room) do
+  def _attack_enemie(player, enemie, amount, state, room, stance) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -189,7 +189,7 @@ defmodule Room do
     } = state
 
     if turn == :player and turn_order[player] do
-      new_state = _attack(enemie, player, :player, amount, state)
+      new_state = _attack(enemie, player, :player, amount, state, stance)
 
       %{
         enemies: enemies
@@ -210,7 +210,7 @@ defmodule Room do
     } = state
 
     if turn == :enemie and turn_order[enemie] do
-      new_state = _attack(enemie, player, :enemie, amount, state)
+      new_state = _attack(enemie, player, :enemie, amount, state, Enemie.get_stance(enemie))
 
       %{
         players: players
@@ -223,7 +223,7 @@ defmodule Room do
     end
   end
 
-  def _attack(enemie, player, direction, amount, state) do
+  def _attack(enemie, player, direction, amount, state, stance) do
     %{
       enemies: enemies,
       players: players
@@ -233,11 +233,11 @@ defmodule Room do
     health =
       if enemie in enemies and player in players do
         if direction == :player do
-          Enemie.be_attacked(enemie, amount, Player.get_stance(enemie))
+          Enemie.be_attacked(enemie, amount, stance)
           # if health == 0, do: _remove_enemie(room, enemie)
           # health
         else
-          Player.be_attacked(player, amount, Enemie.get_stance(player))
+          Player.be_attacked(player, amount, stance)
           # if health == 0, do: _remove_player(room, player)
           # health
         end
@@ -310,8 +310,6 @@ defmodule Room do
       players: players,
       turn_order: turn_order
     } = state
-
-    Player.set_room(player, nil)
 
     %State{
       state

@@ -25,7 +25,7 @@ defmodule ClientProxy do
   def init(:ok) do
     # Empieza el server, crea el usuario (por ahora lo harcodeamos asi luego se crearia al conectarse), crea el world y obtiene la start_room
 
-    player = Player.start_link(100, :paper)
+    player = Player.start_link(100, :rock)
     world = World.start_link()
     room = World.get_starting_room(world)
 
@@ -72,16 +72,16 @@ defmodule ClientProxy do
   # Then ClientProxy could implement a handle_info where it receives the responses
   defp _get_entities_state(entities, callback) do
     entities
-    |> Enum.map(fn entity -> _serialize_entity_state(entity, callback)end)
+    |> Enum.map(fn entity -> _serialize_entity_state(entity, callback) end)
   end
 
   defp _serialize_entity_state(entity, callback) do
-      state = callback.(entity)
-      {
-        entity,
-        state.health,
-        state.stance
-      }
-  end
+    state = callback.(entity)
 
+    {
+      entity,
+      state.health,
+      state.stance
+    }
+  end
 end

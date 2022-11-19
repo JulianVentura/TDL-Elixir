@@ -33,7 +33,7 @@ defmodule Enemie do
 
     pid
   end
-  
+
   def get_state(enemie) do
     enemie
     |> _get_state(:entity)
@@ -58,17 +58,8 @@ defmodule Enemie do
     Entity.get_state(entity).stance
   end
 
-  @spec attack(id, id, integer) :: integer
-  def attack(enemie, player, amount) do
-    %{
-      room: room
-    } = _get_state(enemie)
-
-    Room.attack(room, enemie, player, amount)
-  end
-
   @spec choose_player_to_attack(pid, list) :: pid
-  def choose_player_to_attack(enemie, players) do
+  def choose_player_to_attack(_enemie, players) do
     IA.choose_player_to_attack(players, :basic_ia)
   end
 
@@ -88,10 +79,4 @@ defmodule Enemie do
   defp _get_state(player, key) do
     Agent.get(player, &Map.get(&1, key))
   end
-
-  @spec _update_state(id, key, state_attribute()) :: atom()
-  defp _update_state(enemie, key, value) do
-    Agent.update(enemie, &Map.put(&1, key, value))
-  end
-
 end
