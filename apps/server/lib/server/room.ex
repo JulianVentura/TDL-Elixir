@@ -134,8 +134,9 @@ defmodule Room do
 
     new_state =
       if next_room != nil and length(enemies) == 0 do
+        new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
-        _remove_player(player, state)
+        new_state
       else
         state
       end
