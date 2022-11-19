@@ -34,7 +34,7 @@ defmodule Room do
   end
 
   def attack(room, attacker, defender, amount) do
-    GenServer.call(room, {:attack, attacker, defender, amount})
+    GenServer.call(room, {:attack, attacker, defender, amount, room})
   end
 
   @spec move(id, id, direction) :: atom()
@@ -76,25 +76,9 @@ defmodule Room do
   end
 
   @impl true
-  def handle_call({:attack, attacker, defender, amount}, _from, state) do
-    %{
-      players: players,
-      enemies: enemies
-    } = state
-
-    # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
-    state =
-      if attacker in players do
-        _attack_enemie(attacker, defender, amount, state)
-      else
-        if attacker in enemies do
-          _attack_player(attacker, defender, amount, state)
-        else
-          state
-        end
-      end
-
-    {:reply, :ok, state}
+  def handle_call({:attack, attacker, defender, amount, room}, _from, state) do
+    state = _attack_handler(attacker, defender, amount, room, state)
+    {:reply, state, state}
   end
 
   @impl true
@@ -165,9 +149,39 @@ defmodule Room do
     {:reply, state, state}
   end
 
+  @impl true
+  def handle_cast({:change_turn, attacker, attackees, defendees, turn}, state) do
+    new_state = _change_turn(attacker, attackees, defendees, turn, state)
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:attack, attacker, defender, amount, room}, state) do
+    new_state = _attack_handler(attacker, defender, amount, room, state)
+    {:noreply, new_state}
+  end
+
   # Private functions
 
-  def _attack_enemie(player, enemie, amount, state) do
+  def _attack_handler(attacker, defender, amount, room, state) do
+    %{
+      players: players,
+      enemies: enemies
+    } = state
+
+    # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
+    if attacker in players do
+      _attack_enemie(attacker, defender, amount, state, room)
+    else
+      if attacker in enemies do
+        _attack_player(attacker, defender, amount, state, room)
+      else
+        state
+      end
+    end
+  end
+
+  def _attack_enemie(player, enemie, amount, state, room) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -181,13 +195,14 @@ defmodule Room do
         enemies: enemies
       } = new_state
 
-      _change_turn(player, players, enemies, :enemie, new_state)
+      GenServer.cast(room, {:change_turn, player, players, enemies, :enemie})
+      new_state
     else
-      -1
+      state
     end
   end
 
-  def _attack_player(enemie, player, amount, state) do
+  def _attack_player(enemie, player, amount, state, room) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -201,9 +216,10 @@ defmodule Room do
         players: players
       } = new_state
 
-      _change_turn(enemie, enemies, players, :player, new_state)
+      GenServer.cast(room, {:change_turn, enemie, enemies, players, :player})
+      new_state
     else
-      -1
+      state
     end
   end
 
@@ -267,7 +283,7 @@ defmodule Room do
         %{player: player_to_attack, amount: amount} =
           Enemie.choose_player_to_attack(enemie, attackees)
 
-        # _attack_player(room, enemie, player_to_attack, amount)
+        GenServer.cast(self(), {:attack, enemie, player_to_attack, amount, self()})
       end
     end
 
