@@ -11,7 +11,7 @@ defmodule Room do
           }
   end
 
-  use Agent
+  use GenServer
   # Public API
 
   @type world :: World.t()
@@ -25,94 +25,193 @@ defmodule Room do
   @type key :: atom
   @type state_attribute :: world | enemies | players | turn | turn_order
 
+  # Public API
+
   @spec start_link(world, integer) :: pid
   def start_link(world, enemies_amount) do
-    {:ok, pid} = Agent.start_link(fn -> %{} end)
-    enemies = EnemyCreator.create_enemies(:basic_room, pid, enemies_amount)
+    {_, room} = GenServer.start_link(__MODULE__, {world, enemies_amount})
+    room
+  end
+
+  def attack(room, attacker, defender, amount) do
+    GenServer.call(room, {:attack, attacker, defender, amount})
+  end
+
+  @spec move(id, id, direction) :: atom()
+  def move(room, player, direction) do
+    GenServer.call(room, {:move, player, direction, room})
+  end
+
+  @spec add_enemie(id, id) :: atom()
+  def add_enemie(room, enemie) do
+    GenServer.call(room, {:add_enemie, enemie})
+  end
+
+  @spec add_player(id, id) :: atom()
+  def add_player(room, player) do
+    GenServer.call(room, {:add_player, player, room})
+  end
+
+  def get_state(room) do
+    GenServer.call(room, :get_state)
+  end
+
+  # Handlers
+
+  @impl true
+  def init({world, enemies_amount}) do
+    room = self()
+    enemies = EnemyCreator.create_enemies(:basic_room, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
-    state = %State{
+    initial_state = %State{
       world: world,
       enemies: enemies,
       players: [],
       turn: :player,
       turn_order: turn_order
     }
-  
-    _update_state(pid, state) 
 
-    pid
+    {:ok, initial_state}
   end
 
-  @spec attack(id, id, id, integer) :: integer
-  def attack(room, attacker, defender, amount) do
+  @impl true
+  def handle_call({:attack, attacker, defender, amount}, _from, state) do
     %{
       players: players,
       enemies: enemies
-    } = _get_state(room)
-    
+    } = state
+
     # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
-    if attacker in players do
-      _attack_enemie(room, attacker, defender, amount)
-    else
-      if attacker in enemies do
-        _attack_player(room, attacker, defender, amount)
+    state =
+      if attacker in players do
+        _attack_enemie(attacker, defender, amount, state)
       else
-        -1
+        if attacker in enemies do
+          _attack_player(attacker, defender, amount, state)
+        else
+          state
+        end
       end
-    end
+
+    {:reply, :ok, state}
   end
 
-  @spec _attack_enemie(id, id, id, integer) :: integer
-  def _attack_enemie(room, player, enemie, amount) do
+  @impl true
+  def handle_call({:add_player, player, room}, _from, state) do
+    %{
+      players: players,
+      enemies: _enemies,
+      turn_order: turn_order,
+      turn: turn
+    } = state
+
+    players = players ++ [player]
+
+    turn_order =
+      Map.put(
+        turn_order,
+        player,
+        turn == :player
+      )
+
+    Player.set_room(player, room)
+    {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
+  end
+
+  @impl true
+  def handle_call({:add_enemie, enemie}, _from, state) do
+    %{
+      players: _players,
+      enemies: enemies,
+      turn_order: turn_order,
+      turn: turn
+    } = state
+
+    enemies = enemies ++ [enemie]
+
+    turn_order =
+      Map.put(
+        turn_order,
+        enemie,
+        turn == :enemie
+      )
+
+    {:reply, :ok, %State{state | turn_order: turn_order, enemies: enemies}}
+  end
+
+  @impl true
+  def handle_call({:move, player, direction, room}, _from, state) do
+    %{
+      world: world,
+      enemies: enemies
+    } = state
+
+    next_room = World.get_neighbours(world, room, direction)
+
+    new_state =
+      if next_room != nil and length(enemies) == 0 do
+        Room.add_player(next_room, player)
+        _remove_player(player, state)
+      else
+        state
+      end
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  # Private functions
+
+  def _attack_enemie(player, enemie, amount, state) do
     %{
       turn: turn,
       turn_order: turn_order,
       players: players
-    } = _get_state(room)
+    } = state
 
     if turn == :player and turn_order[player] do
-      health = _attack(room, enemie, player, :player, amount)
+      new_state = _attack(enemie, player, :player, amount, state)
 
       %{
         enemies: enemies
-      } = _get_state(room)
+      } = new_state
 
-      _change_turn(room, player, players, enemies, :enemie)
-      health
+      _change_turn(player, players, enemies, :enemie, new_state)
     else
       -1
     end
   end
 
-  @spec _attack_player(id, id, id, integer) :: integer
-  def _attack_player(room, enemie, player, amount) do
+  def _attack_player(enemie, player, amount, state) do
     %{
       turn: turn,
       turn_order: turn_order,
       enemies: enemies
-    } = _get_state(room)
+    } = state
 
     if turn == :enemie and turn_order[enemie] do
-      health = _attack(room, enemie, player, :enemie, amount)
+      new_state = _attack(enemie, player, :enemie, amount, state)
 
       %{
         players: players
-      } = _get_state(room)
+      } = new_state
 
-      _change_turn(room, enemie, enemies, players, :player)
-      health
+      _change_turn(enemie, enemies, players, :player, new_state)
     else
       -1
     end
   end
 
-  @spec _attack(id, id, id, atom, integer) :: integer
-  def _attack(room, enemie, player, direction, amount) do
+  def _attack(enemie, player, direction, amount, state) do
     %{
       enemies: enemies,
       players: players
-    } = _get_state(room)
+    } = state
 
     # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
     health =
@@ -130,162 +229,78 @@ defmodule Room do
         # Si no estan en la sala no deberian poder atacarse
         -1
       end
-    
+
     # TODO: El codigo se podría refactorizar a como como está arriba (comentado).
     # Realmente no hace falta volver a preguntar acá la direction
     # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
 
     if health == 0 do
       if direction == :player do
-        _remove_enemie(room, enemie)
+        _remove_enemie(enemie, state)
       else
-        _remove_player(room, player)
+        _remove_player(player, state)
       end
+    else
+      state
     end
-
-    health
   end
 
-  @spec _change_turn(id, id, list, list, atom) :: :ok
-  def _change_turn(room, attacker, attackees, defendees, turn) do
+  def _change_turn(attacker, attackees, defendees, turn, state) do
     %{
       turn_order: turn_order
-    } = _get_state(room)
+    } = state
 
     turn_order = Map.put(turn_order, attacker, false)
     change_turn = List.foldl(attackees, true, fn x, acc -> acc and not turn_order[x] end)
 
-    if change_turn do
-      _update_state(room, :turn, turn)
+    new_turn = if change_turn, do: turn, else: state.turn
 
-      turn_order = for d <- defendees, into: turn_order, do: {d, true}
-      _update_state(room, :turn_order, turn_order)
-
-      if turn == :enemie do
-        for enemie <- defendees do
-          %{player: player_to_attack, amount: amount} =
-            Enemie.choose_player_to_attack(enemie, attackees)
-
-          _attack_player(room, enemie, player_to_attack, amount)
-        end
+    new_turn_order =
+      if change_turn do
+        for d <- defendees, into: turn_order, do: {d, true}
+      else
+        turn_order
       end
-    else
-      _update_state(room, :turn_order, turn_order)
+
+    if change_turn and turn == :enemie do
+      for enemie <- defendees do
+        %{player: player_to_attack, amount: amount} =
+          Enemie.choose_player_to_attack(enemie, attackees)
+
+        # _attack_player(room, enemie, player_to_attack, amount)
+      end
     end
+
+    %State{state | turn: new_turn, turn_order: new_turn_order}
   end
 
-  @spec get_state(id) :: State.t()
-  def get_state(room) do
-    _get_state(room)
-  end
-
-  @spec add_player(id, id) :: atom()
-  def add_player(room, player) do
-    %{
-      players: players,
-      enemies: _enemies,
-      turn_order: turn_order,
-      turn: turn
-    } = _get_state(room)
-
-    players = players ++ [player]
-
-    turn_order =
-      Map.put(
-        turn_order,
-        player,
-        turn == :player
-      )
-
-    Player.set_room(player, room)
-    _update_state(room, :turn_order, turn_order)
-    _update_state(room, :players, players)
-  end
-
-  @spec add_enemie(id, id) :: atom()
-  def add_enemie(room, enemie) do
-    %{
-      players: _players,
-      enemies: enemies,
-      turn: turn,
-      turn_order: turn_order
-    } = _get_state(room)
-
-    enemies = enemies ++ [enemie]
-
-    turn_order =
-      Map.put(
-        turn_order,
-        enemie,
-        turn == :enemie
-      )
-
-    _update_state(room, :turn_order, turn_order)
-    _update_state(room, :enemies, enemies)
-  end
-
-  @spec _remove_enemie(id, id) :: atom()
-  def _remove_enemie(room, enemie) do
+  def _remove_enemie(enemie, state) do
     %{
       enemies: enemies,
       turn_order: turn_order
-    } = _get_state(room)
+    } = state
 
     Enemie.stop(enemie)
-    _update_state(room, :turn_order, Map.delete(turn_order, enemie))
-    _update_state(room, :enemies, List.delete(enemies, enemie))
+
+    %State{
+      state
+      | turn_order: Map.delete(turn_order, enemie),
+        enemies: List.delete(enemies, enemie)
+    }
   end
 
-  @spec _remove_player(id, id) :: atom()
-  def _remove_player(room, player) do
+  def _remove_player(player, state) do
     %{
       players: players,
       turn_order: turn_order
-    } = _get_state(room)
+    } = state
 
     Player.set_room(player, nil)
-    _update_state(room, :turn_order, Map.delete(turn_order, player))
-    _update_state(room, :players, List.delete(players, player))
-  end
 
-  @spec move(id, id, direction) :: atom()
-  def move(room, player, direction) do
-    %{
-      world: world,
-      enemies: enemies
-    } = _get_state(room)
-
-    if length(enemies) == 0 do
-      next_room = World.get_neighbours(world, room, direction)
-
-      if next_room != nil do
-        Room._remove_player(room, player)
-        Room.add_player(next_room, player)
-      end
-    else
-      # Error
-    end
-  end
-
-  # Private helper functions
-
-  @spec _get_state(id) :: State.t()
-  defp _get_state(room) do
-    Agent.get(room, & &1)
-  end
-
-  @spec _get_state(id, key) :: state_attribute
-  defp _get_state(room, key) do
-    Agent.get(room, &Map.get(&1, key))
-  end
-
-  @spec _update_state(id, key, state_attribute()) :: atom()
-  defp _update_state(room, key, value) do
-    Agent.update(room, &Map.put(&1, key, value))
-  end
-
-  @spec _update_state(id, state_attribute()) :: atom()
-  defp _update_state(room, state) do
-    Agent.update(room, fn _ -> state end)
+    %State{
+      state
+      | turn_order: Map.delete(turn_order, player),
+        players: List.delete(players, player)
+    }
   end
 end
