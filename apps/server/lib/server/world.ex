@@ -34,9 +34,7 @@ defmodule World do
         {graph, iroom, room_state, pid_to_label} = acc
         [label, enemies_amount | connections] = args
 
-        iroom = if iroom == nil do
-          label
-        end
+        iroom = if iroom == nil do label else iroom end
 
         {enemies_amount, _} = Integer.parse(enemies_amount)
 
