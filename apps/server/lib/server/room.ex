@@ -18,7 +18,7 @@ defmodule Room do
   @type enemies :: list
   @type players :: list
   @type id :: pid | atom
-  @type direction :: atom
+  @type direction :: String.t()
   @type turn :: atom
   @type turn_order :: map
 
@@ -37,7 +37,6 @@ defmodule Room do
     GenServer.call(room, {:attack, attacker, defender, amount, room})
   end
 
-  @spec move(id, id, direction) :: atom()
   def move(room, player, direction) do
     GenServer.call(room, {:move, player, direction, room})
   end

@@ -78,7 +78,6 @@ defmodule Player do
     Room.attack(room, player, enemie, 10)
   end
 
-  @spec move(id, atom) :: integer
   def move(player, direction) do
     %{
       room: room

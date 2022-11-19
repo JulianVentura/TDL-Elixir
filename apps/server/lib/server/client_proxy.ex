@@ -43,7 +43,7 @@ defmodule ClientProxy do
 
   @impl true
   def handle_call({:move, direction}, _from, {player, _}) do
-    Player.move(player, :N)
+    Player.move(player, direction)
     room = Player.get_room(player)
     {:reply, direction, {player, room}}
   end
