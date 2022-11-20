@@ -170,10 +170,10 @@ defmodule Room do
     } = state
 
     # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
-    if attacker in players do
+    if attacker in players and defender in enemies do
       _attack_enemie(attacker, defender, amount, state, room, stance)
     else
-      if attacker in enemies do
+      if attacker in enemies and defender in players do
         _attack_player(attacker, defender, amount, state, room)
       else
         state
