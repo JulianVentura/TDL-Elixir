@@ -89,14 +89,14 @@ defmodule Room do
       turn: turn
     } = state
 
-    players = players ++ [player]
-
     turn_order =
       Map.put(
         turn_order,
         player,
-        turn == :player
+        turn == :player and Enum.empty?(players)
       )
+
+    players = players ++ [player]
 
     Player.set_room(player, room)
     {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
@@ -267,15 +267,23 @@ defmodule Room do
     } = state
 
     turn_order = Map.put(turn_order, attacker, false)
-    change_turn = List.foldl(attackees, true, fn x, acc -> acc and not turn_order[x] end)
+    change_turn = List.last(attackees) == attacker
 
     new_turn = if change_turn, do: turn, else: state.turn
 
     new_turn_order =
       if change_turn do
-        for d <- defendees, into: turn_order, do: {d, true}
+        if turn == :enemie do
+          for d <- defendees, into: turn_order, do: {d, true}
+        else
+          Map.put(turn_order, List.first(defendees), true)
+        end
       else
-        turn_order
+        Map.put(
+          turn_order,
+          Enum.at(attackees, Enum.find_index(attackees, fn x -> x == attacker end) + 1),
+          true
+        )
       end
 
     if change_turn and turn == :enemie do
