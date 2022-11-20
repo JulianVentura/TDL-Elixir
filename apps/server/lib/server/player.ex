@@ -59,6 +59,10 @@ defmodule Player do
     GenServer.call(player, {:move, player, direction})
   end
 
+  def receive_state(player, state_received) do
+    GenServer.cast(player, {:receive_state, state_received})
+  end
+
   @impl true
   def init({health, initial_stance}) do
     entity = Entity.start_link(health, initial_stance)
@@ -104,5 +108,11 @@ defmodule Player do
   def handle_cast({:set_room, room}, state) do
     new_state = %State{state | room: room}
     {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:receive_state, _state_received}, state) do
+    # TODO: Mandar nuevo estado a client proxy
+    {:noreply, state}
   end
 end

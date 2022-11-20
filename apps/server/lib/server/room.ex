@@ -287,7 +287,15 @@ defmodule Room do
       end
     end
 
-    %State{state | turn: new_turn, turn_order: new_turn_order}
+    new_state = %State{state | turn: new_turn, turn_order: new_turn_order}
+
+    if change_turn and turn == :player do
+      for player <- defendees do
+        Player.receive_state(player, new_state)
+      end
+    end
+
+    new_state
   end
 
   def _remove_enemie(enemie, state) do
