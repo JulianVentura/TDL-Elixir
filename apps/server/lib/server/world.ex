@@ -4,8 +4,8 @@ defmodule World do
 
   # Public API
 
-  def start_link(opts \\ []) do
-    {_, world} = GenServer.start_link(__MODULE__, :ok, opts)
+  def start_link(world_file_path) do
+    {_, world} = GenServer.start_link(__MODULE__, {world_file_path})
     world
   end
 
@@ -24,21 +24,21 @@ defmodule World do
   # Handlers
 
   @impl true
-  def init(:ok) do
+  def init({world_file_path}) do
     world = self()
-    initial_state = File.stream!("./data/a.txt") 
+    initial_state = File.stream!(world_file_path) 
     |> Stream.map(fn line -> String.trim(line) end) #Remove \n
     |> Stream.map(fn line -> String.split(line, ",") end)
     |> Enum.reduce({:digraph.new(), nil, %{}, %{}},
       fn args, acc ->
         {graph, iroom, room_state, pid_to_label} = acc
-        [label, enemies_amount | connections] = args
+        [label, enemies_amount, type | connections] = args
 
         iroom = if iroom == nil do label else iroom end
 
         {enemies_amount, _} = Integer.parse(enemies_amount)
 
-        room_pid = Room.start_link(world, enemies_amount)
+        room_pid = Room.start_link(world, enemies_amount, type)
         room_state = Map.put(room_state, label, [room_pid, enemies_amount])
         pid_to_label = Map.put(pid_to_label, room_pid, label)
         :digraph.add_vertex(graph, label)

@@ -1,13 +1,14 @@
 defmodule Room do
   defmodule State do
-    defstruct [:world, :enemies, :players, :turn, :turn_order]
+    defstruct [:world, :enemies, :players, :turn, :turn_order, :type]
 
     @type t() :: %__MODULE__{
             world: World.t(),
             enemies: list | nil,
             players: list | nil,
             turn: atom | nil,
-            turn_order: map | nil
+            turn_order: map | nil,
+            type: String.t()
           }
   end
 
@@ -27,9 +28,9 @@ defmodule Room do
 
   # Public API
 
-  @spec start_link(world, integer) :: pid
-  def start_link(world, enemies_amount) do
-    {_, room} = GenServer.start_link(__MODULE__, {world, enemies_amount})
+  @spec start_link(world, integer, integer) :: pid
+  def start_link(world, enemies_amount, flags) do
+    {_, room} = GenServer.start_link(__MODULE__, {world, enemies_amount, flags})
     room
   end
 
@@ -58,9 +59,9 @@ defmodule Room do
   # Handlers
 
   @impl true
-  def init({world, enemies_amount}) do
+  def init({world, enemies_amount, type}) do
     room = self()
-    enemies = EnemyCreator.create_enemies(:basic_room, room, enemies_amount)
+    enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
     initial_state = %State{
@@ -68,7 +69,8 @@ defmodule Room do
       enemies: enemies,
       players: [],
       turn: :player,
-      turn_order: turn_order
+      turn_order: turn_order,
+      type: type
     }
 
     {:ok, initial_state}

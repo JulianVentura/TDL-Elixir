@@ -1,3 +1,3 @@
-A,0,B,C
-B,8,A
-C,7,A
+A,0,normal,B,C
+B,1,boss,A
+C,1,normal,A
