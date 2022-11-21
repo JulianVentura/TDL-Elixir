@@ -281,4 +281,46 @@ defmodule PlayerTest do
 
     assert length(enemies) == 0
   end
+
+  test "move error" do
+    player = Player.start_link(100, :rock)
+    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    World.add_player(world, player)
+    {error, msg} = Player.move(player, "B")
+    assert error
+    assert msg == "There are enemies in the room"
+    {error2, msg2} = Player.move(player, "NADA")
+    assert error2
+    assert msg2 == "Invalid Direction"
+  end
+
+  test "attack error" do
+    player = Player.start_link(100, :rock)
+    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    World.add_player(world, player)
+    room = Player.get_room(player)
+
+    {error, msg} = Player.attack(player, "Nada")
+    assert error
+    assert msg == "Invalid Attack"
+
+    %{enemies: enemies} = Room.get_state(room)
+    {error2, msg2} = Room.attack(room, "Nada", List.first(enemies), 10, :rock)
+    assert error2
+    assert msg2 == "Invalid Attack"
+  end
+
+  test "attack turn error" do
+    player1 = Player.start_link(100, :rock)
+    player2 = Player.start_link(100, :rock)
+    world = World.start_link("./data/tests/player_test_5.txt", 4)
+    World.add_player(world, player1)
+    World.add_player(world, player2)
+    room = Player.get_room(player2)
+    %{enemies: enemies} = Room.get_state(room)
+
+    {error, msg} = Player.attack(player2, List.first(enemies))
+    assert error
+    assert msg == "Its not your turn"
+  end
 end

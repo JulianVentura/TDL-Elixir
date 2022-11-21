@@ -104,14 +104,16 @@ defmodule Player do
 
   @impl true
   def handle_call({:attack, player, enemie}, _from, state) do
-    Room.attack(state.room, player, enemie, 10, Entity.get_state(state.entity).stance)
-    {:reply, :ok, state}
+    {error, msg} =
+      Room.attack(state.room, player, enemie, 10, Entity.get_state(state.entity).stance)
+
+    {:reply, {error, msg}, state}
   end
 
   @impl true
   def handle_call({:move, player, direction}, _from, state) do
-    Room.move(state.room, player, direction)
-    {:reply, :ok, state}
+    res = Room.move(state.room, player, direction)
+    {:reply, res, state}
   end
 
   @impl true
