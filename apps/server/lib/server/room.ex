@@ -85,6 +85,7 @@ defmodule Room do
   @impl true
   def handle_call({:add_player, player, room}, _from, state) do
     %{
+      world: world,
       players: players,
       enemies: _enemies,
       turn_order: turn_order,
@@ -103,10 +104,13 @@ defmodule Room do
 
     Player.set_room(player, room)
 
-    case type do
-      "safe" -> Player.heal(player)
-      "exit" -> Player.finish(player)
-      _ -> nil
+    if type == "safe" do
+      Player.heal(player)
+    else 
+      if type == "exit" do
+        Player.finish(player)
+        World.finish(world)
+      end
     end
 
     {:reply, :ok, %State{state | turn_order: turn_order, players: players}}

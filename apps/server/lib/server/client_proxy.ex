@@ -26,11 +26,9 @@ defmodule ClientProxy do
     # Empieza el server, crea el usuario (por ahora lo harcodeamos asi luego se crearia al conectarse), crea el world y obtiene la start_room
 
     player = Player.start_link(100, :rock)
-    world = World.start_link("./data/a.txt")
-    room = World.get_starting_room(world)
-
-    # Aca se conecta un usuario, se agrega el usuario a la room y se le devuelve el pid del usuario
-    Room.add_player(room, player)
+    world = World.start_link("./data/a.txt", 4)
+    World.add_player(world, player)
+    room = Player.get_room(player)
 
     {:ok, {player, room}}
   end
