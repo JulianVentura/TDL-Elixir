@@ -1,4 +1,11 @@
 defmodule Client.Client do
+  def child_spec(arg) do
+    %{
+      id: Client.Client,
+      start: {Client.Client, :game_loop, [arg]}
+    }
+  end
+
   def game_loop(last_command \\ nil) do
     game_state = ClientProxy.get_state(TempProxy)
     _draw(game_state, last_command)
@@ -24,13 +31,15 @@ defmodule Client.Client do
   end
 
   defp _draw(game_state, cmd) do
-    IEx.Helpers.clear
+    IEx.Helpers.clear()
     IO.puts("\n--- ESTADO DEL JUEGO ---\n")
     IO.inspect(game_state)
-    if cmd do 
+
+    if cmd do
       IO.puts("\n---- ULTIMO COMANDO ----\n")
       IO.puts(cmd)
     end
+
     IO.puts("\n------------------------\n")
   end
 
