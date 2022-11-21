@@ -1,0 +1,2 @@
+B,2,boss,A
+A,1,start,B
