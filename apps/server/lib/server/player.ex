@@ -109,6 +109,12 @@ defmodule Player do
   end
 
   @impl true
+  def handle_call({:move, player, direction}, _from, state) do
+    Room.move(state.room, player, direction)
+    {:reply, :ok, state}
+  end
+
+  @impl true
   def handle_cast(:heal, state) do
     Entity.heal(state.entity)
     {:noreply, state}
@@ -118,12 +124,6 @@ defmodule Player do
   def handle_cast(:finish, state) do
     IO.inspect("Tesoro!")
     {:noreply, state}
-  end
-
-  @impl true
-  def handle_call({:move, player, direction}, _from, state) do
-    Room.move(state.room, player, direction)
-    {:reply, :ok, state}
   end
 
   @impl true
