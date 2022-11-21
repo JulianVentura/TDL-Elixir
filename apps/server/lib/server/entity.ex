@@ -1,8 +1,9 @@
 defmodule Entity do
   defmodule State do
-    defstruct [:health, :stance]
+    defstruct [:max_health, :health, :stance]
 
     @type t() :: %__MODULE__{
+            max_health: non_neg_integer() | nil,
             health: non_neg_integer() | nil,
             stance: atom | nil
           }
@@ -20,7 +21,7 @@ defmodule Entity do
 
   @spec start_link(health, stance) :: pid
   def start_link(health, initial_stance) do
-    state = %State{health: health, stance: initial_stance}
+    state = %State{max_health: health, health: health, stance: initial_stance}
 
     {:ok, pid} =
       Agent.start_link(
@@ -49,6 +50,14 @@ defmodule Entity do
     _update_state(entity, :health, damage)
     # Devuelve la nueva vida, no el daño recibido
     damage
+  end
+
+  @spec heal(id) :: atom()
+  def heal(entity) do
+    %{
+      max_health: max_health,
+    } = _get_state(entity)
+    _update_state(entity, :health, max_health)
   end
 
   # Private helper functions

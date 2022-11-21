@@ -40,6 +40,16 @@ defmodule Player do
     GenServer.call(player, {:be_attacked, amount, other_stance})
   end
 
+  @spec heal(id) :: integer
+  def heal(player) do
+    GenServer.cast(player, :heal)
+  end
+
+  @spec finish(id) :: integer
+  def finish(player) do
+    GenServer.cast(player, :finish)
+  end
+
   @spec get_stance(id) :: stance
   def get_stance(player) do
     GenServer.call(player, :get_stance)
@@ -96,6 +106,18 @@ defmodule Player do
   def handle_call({:attack, player, enemie}, _from, state) do
     Room.attack(state.room, player, enemie, 10, Entity.get_state(state.entity).stance)
     {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_cast(:heal, state) do
+    Entity.heal(state.entity)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:finish, state) do
+    IO.inspect("Tesoro!")
+    {:noreply, state}
   end
 
   @impl true

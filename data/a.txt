@@ -1,3 +1,4 @@
-A,0,normal,B,C
-B,1,boss,A
-C,1,normal,A
+A,0,start,B,D
+B,2,boss,A,C
+C,0,exit,B
+D,0,safe,A

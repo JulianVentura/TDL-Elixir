@@ -19,7 +19,7 @@ defmodule EnemyCreator do
 
   def _create_boss_enemies(room, amount) do
     if amount > 0 do
-      for _ <- 0..(amount - 1) do Enemie.start_link(1000, :rock, room) end
+      for _ <- 0..(amount - 1) do Enemie.start_link(10, :rock, room) end
     else
       []
     end

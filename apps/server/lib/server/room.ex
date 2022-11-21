@@ -88,7 +88,8 @@ defmodule Room do
       players: players,
       enemies: _enemies,
       turn_order: turn_order,
-      turn: turn
+      turn: turn,
+      type: type
     } = state
 
     turn_order =
@@ -101,6 +102,13 @@ defmodule Room do
     players = players ++ [player]
 
     Player.set_room(player, room)
+
+    case type do
+      "safe" -> Player.heal(player)
+      "exit" -> Player.finish(player)
+      _ -> nil
+    end
+
     {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
   end
 
