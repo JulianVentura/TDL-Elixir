@@ -7,8 +7,8 @@ defmodule ClientProxy do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
-  def attack(pid, name) do
-    GenServer.call(pid, {:attack, name})
+  def attack(pid, enemy) do
+    GenServer.call(pid, {:attack, enemy})
   end
 
   def move(pid, direction) do
