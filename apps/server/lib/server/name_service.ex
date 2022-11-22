@@ -61,7 +61,8 @@ defmodule NameService do
   end
 
   defp register({[name | t], ref_to_name}, process) do
-    Process.register(process, name)
+    IO.inspect(name)
+    IO.inspect(Process.register(process, name))
     ref = Process.monitor(process)
     ref_to_name = Map.put(ref_to_name, ref, name)
      

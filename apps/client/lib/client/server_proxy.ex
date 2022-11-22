@@ -23,13 +23,13 @@ defmodule ServerProxy do
 
   @impl true
   def init(server_name) do
-    {node_address, client_proxy_name} = IGameMaker.new_game({ GameMaker, server_name }) # TODO: ver
+    {client_proxy_name, node_address} = IGameMaker.new_game({ GameMaker, server_name }) # TODO: ver
     
     Node.connect(node_address)
 
-    client_proxy = {node_address, client_proxy_name}
+    client_proxy = {client_proxy_name, node_address}
 
-    IClientProxy.hello_server(client_proxy, {node(), self()})  
+    IClientProxy.hello_server(client_proxy, {ServerProxy, node()})  
     state = %{} # TODO: ver
 
     {:ok, {client_proxy, state}}

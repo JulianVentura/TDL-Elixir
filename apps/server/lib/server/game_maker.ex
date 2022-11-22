@@ -64,7 +64,7 @@ defmodule GameMaker do
 
       new_worlds = Enum.concat(full, not_full)
 
-      {{node(), name}, {new_worlds, name_service}}
+      {{name, node()}, {new_worlds, name_service}}
     end
   
   @impl true
