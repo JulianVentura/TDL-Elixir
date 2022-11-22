@@ -92,7 +92,7 @@ defmodule Room do
     %{
       world: world,
       players: players,
-      enemies: _enemies,
+      enemies: enemies,
       turn_order: turn_order,
       turn: turn,
       type: type
@@ -109,6 +109,11 @@ defmodule Room do
 
     Player.set_room(player, room)
 
+    {player_turn, _} =
+      turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first()
+
+    _broadcast_game_state(true, player_turn, players, enemies, world)
+
     if type == "safe" do
       Player.heal(player)
     else
@@ -117,7 +122,7 @@ defmodule Room do
         World.finish(world)
       end
     end
-    
+
     {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
   end
 
@@ -331,21 +336,22 @@ defmodule Room do
 
     new_state
   end
-  
-  def _broadcast_game_state(:player, turn, players, enemies, world) do
+
+  def _broadcast_game_state(true, turn, players, enemies, world) do
     new_state = %{
       enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
       players: Enum.map(players, fn player -> {player, Player.get_state(player)} end),
       rooms: World.get_neighbours(world, self()),
       turn: turn
     }
+
     IO.inspect("Broadcast state: ")
     IO.inspect(new_state)
 
     Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
   end
 
-  def _broadcast_game_state(_, _, _, _), do: :ok
+  def _broadcast_game_state(_, _, _, _, _), do: :ok
 
   def _remove_enemie(enemie, state) do
     %{
