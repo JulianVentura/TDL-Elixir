@@ -1,6 +1,7 @@
 defmodule World do
   require Room
   use GenServer
+  require Logger
 
   # Public API
 
@@ -45,6 +46,7 @@ defmodule World do
 
   @impl true
   def init({world_file_path, max_players}) do
+    Logger.info("Starting World #{world_file_path} with #{max_players} player capacity")
     world = self()
     {graph, iroom, room_state, pid_to_label} = File.stream!(world_file_path) 
     |> Stream.map(fn line -> String.trim(line) end) #Remove \n
@@ -104,6 +106,7 @@ defmodule World do
 
   @impl true
   def handle_call({:add_player, player}, _from, state) do
+    Logger.info("World: Adding player #{inspect player}")
     %{
       room_state: room_state,
       iroom: iroom,
@@ -119,7 +122,8 @@ defmodule World do
   end
 
   @impl true
-  def handle_call({:remove_player, _player}, _from, state) do
+  def handle_call({:remove_player, player}, _from, state) do
+    Logger.info("World: Removing player #{inspect player}")
     new_state = %{state | players: (state.players - 1)}
 
     {:reply, :ok, new_state}

@@ -1,4 +1,5 @@
 defmodule Room do
+  require Logger
   defmodule State do
     defstruct [:world, :enemies, :players, :turn, :turn_order, :type]
 
@@ -60,6 +61,7 @@ defmodule Room do
 
   @impl true
   def init({world, enemies_amount, type}) do
+    Logger.info("Starting Room of type #{type} from world #{inspect world}")
     room = self()
     enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
@@ -84,6 +86,7 @@ defmodule Room do
 
   @impl true
   def handle_call({:add_player, player, room}, _from, state) do
+    Logger.info("Room #{inspect self()}: Adding player #{inspect player}")
     %{
       world: world,
       players: players,
@@ -145,9 +148,10 @@ defmodule Room do
     } = state
 
     next_room = World.get_neighbours(world, room, direction)
-
+    
     new_state =
       if next_room != nil and length(enemies) == 0 do
+        Logger.info("Room #{inspect self()}: Moving player #{inspect player} to #{next_room}")
         new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
         new_state
@@ -164,6 +168,8 @@ defmodule Room do
         true -> "No error"
       end
 
+  
+    # TODO: Para qué devolvemos un mensaje si no hay error?
     {:reply,
      {if error do
         :error
@@ -309,16 +315,17 @@ defmodule Room do
 
     new_state = %State{state | turn: new_turn, turn_order: new_turn_order}
 
-    _broadcast_game_state(change_turn, turn, defendees, attackees)
+    _broadcast_game_state(change_turn, turn, defendees, attackees, state.world)
 
     new_state
   end
   
-  def _broadcast_game_state(true, :player, players, enemies) do
-    
+  def _broadcast_game_state(true, :player, players, enemies, world) do
+     
     new_state = %{
-      enemies => Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
-      players => Enum.map(players, fn player -> {player, Player.get_state(player)} end),
+      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
+      players: Enum.map(players, fn player -> {player, Player.get_state(player)} end),
+      rooms: World.get_neighbours(world, self()),
       turn: :player
     }
 

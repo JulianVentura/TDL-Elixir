@@ -1,5 +1,6 @@
 defmodule GameMaker do
   use GenServer
+  require Logger
 
   # Public API
   def start_link(_) do
@@ -14,54 +15,62 @@ defmodule GameMaker do
 
   @impl true
   def init(:ok) do
-    {:ok, %{}}
+    max_clients = 20
+    name_len = 24
+    Logger.info("Starting GameMaker with #{max_clients} client capacity")
+    {:ok, name_service} = NameService.start_link(max_clients, name_len)
+    {:ok, {[], name_service}}
   end
 
   @impl true
-  def handle_call(:new_game, _from, worlds) do
-      %{
-        true => finished,
-        false => not_finished,
-      } = Enum.group_by(worlds, fn world -> World.finished?(world) end) 
+  def handle_call(:new_game, _from, {worlds, name_service}) do
+      {result, new_state} = 
+        case NameService.full?(name_service) do
+          true -> {:error, {worlds, name_service}} # TODO: Here we should redirect the client to another machine or something like that
+          false -> set_new_game(worlds, name_service) 
+        end
 
-      selected_world = 
-        not_finished
+      {:reply, result, new_state}
+  end
+
+  def set_new_game(worlds, name_service) do
+      
+      spawn_if_necessary = fn 
+        [] -> [World.start_link("./data/a.txt", 4)]  
+        v -> v
+      end
+
+      full = 
+        worlds
+          |> Enum.filter(fn world -> !World.finished?(world) end) 
+          |> Enum.filter(fn world -> World.full?(world) end)
+
+      not_full = 
+        worlds
+          |> Enum.filter(fn world -> !World.finished?(world) end) 
           |> Enum.filter(fn world -> !World.full?(world) end)
-          |> List.first([World.start_link("./data/a.txt", 4)])
+          |> spawn_if_necessary.()
+      
+      # Clean finished
+      worlds
+        |> Enum.filter(fn world -> World.finished?(world) end) 
+        |> Enum.map(fn world -> World.stop(world) end)
 
-      wrlds =
-        not_finished
-          |> Enum.concat(selected_world)
-          |> Enum.uniq()
+      selected_world = List.first not_full
 
-      cpid = ClientProxy.start_link(selected_world)
-      finished |> __free_finished
+      {:ok, cpid} = ClientProxy.start_link(selected_world)
 
-      {:reply, {:ok, {node(), cpid}}, wrlds}
-  end
+      {:ok, name} = NameService.register_process(name_service, cpid)
 
-  @impl true
-  def handle_info({:DOWN, ref, :process, _pid, _reason}, {names, refs}) do
-    {name, refs} = Map.pop(refs, ref)
-    :ets.delete(names, name)
-    {:noreply, {names, refs}}
-  end
+      new_worlds = Enum.concat(full, not_full)
 
+      {{node(), name}, {new_worlds, name_service}}
+    end
+  
   @impl true
   def handle_info(msg, state) do
     require Logger
-    Logger.debug("Unexpected message in DB.Registry: #{msg}")
+    Logger.debug("Unexpected message in GameMaker: #{msg}")
     {:noreply, state}
-  end
-
-  defp __free_finished(worlds) do
-    %{
-      true => finished,
-      false => not_finished,
-    } = Enum.group_by(worlds, fn world -> World.finished?(world) end) 
-
-    Enum.map(finished, fn world -> World.stop(world) end)
-
-    not_finished
   end
 end
