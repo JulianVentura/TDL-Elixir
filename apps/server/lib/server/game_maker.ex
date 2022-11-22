@@ -6,8 +6,8 @@ defmodule GameMaker do
     GenServer.start_link(__MODULE__, :ok, name: GameMaker)
   end
 
-  def new_game(maker, client) do
-    GenServer.call(maker, {:new_game, client})
+  def new_game(maker) do
+    GenServer.call(maker, :new_game)
   end
 
   # Server API
@@ -18,7 +18,7 @@ defmodule GameMaker do
   end
 
   @impl true
-  def handle_call({:new_game, client}, _from, worlds) do
+  def handle_call(:new_game, _from, worlds) do
       %{
         true => finished,
         false => not_finished,
@@ -27,7 +27,7 @@ defmodule GameMaker do
       selected_world = 
         not_finished
           |> Enum.filter(fn world -> !World.full?(world) end)
-          |> List.first([World.start_link])
+          |> List.first([World.start_link("./data/a.txt", 4)])
 
       wrlds =
         not_finished

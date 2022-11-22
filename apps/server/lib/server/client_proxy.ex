@@ -7,8 +7,8 @@ defmodule ClientProxy do
     GenServer.start_link(__MODULE__, world, opts)
   end
 
-  def attack(pid, name) do
-    GenServer.call(pid, {:attack, name})
+  def attack(pid, enemy) do
+    GenServer.call(pid, {:attack, enemy})
   end
 
   def move(pid, direction) do
@@ -32,6 +32,11 @@ defmodule ClientProxy do
 
     {:ok, {nil, player}}
   end
+  
+  @impl true
+  def handle_call({:hello_server, client}, _from, {_, player}) do
+    {:reply, :ok, {client, player}}
+  end
 
   @impl true
   def handle_call({:attack, enemy}, _from, state) do
@@ -43,11 +48,6 @@ defmodule ClientProxy do
   def handle_call({:move, direction}, _from, state) do
     Player.move(state.player, direction)
     {:reply, direction, state}
-  end
-  
-  @impl true
-  def handle_call({:hello_server, client}, _from, {_, player}) do
-    {:reply, :ok, {client, player}}
   end
 
   @impl true

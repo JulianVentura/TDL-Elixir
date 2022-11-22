@@ -4,19 +4,31 @@ defmodule World do
 
   # Public API
 
-  def start_link(opts \\ []) do
-    {_, world} = GenServer.start_link(__MODULE__, :ok, opts)
+  def start_link(world_file_path, max_players) do
+    {_, world} = GenServer.start_link(__MODULE__, {world_file_path, max_players})
     world
   end
 
-  def get_starting_room(world) do
-    GenServer.call(world, :get_starting_room)
+  def finish(world) do
+    GenServer.call(world, :finish)
+  end
+  
+  def finished?(world) do
+    GenServer.call(world, :finished?)
+  end
+  
+  def full?(world) do
+    GenServer.call(world, :full?)
   end
   
   def add_player(world, player) do
     GenServer.call(world, {:add_player, player})
   end
-
+  
+  def remove_player(world, player) do
+    GenServer.call(world, {:remove_player, player})
+  end
+  
   def get_neighbours(world, room) do
     GenServer.call(world, {:get_directions, room})
   end
@@ -25,25 +37,28 @@ defmodule World do
     GenServer.call(world, {:get_room, room, direction})
   end
 
+  def stop(world) do
+    GenServer.stop(world, :normal, 5)
+  end
 
   # Handlers
 
   @impl true
-  def init(:ok) do
+  def init({world_file_path, max_players}) do
     world = self()
-    initial_state = File.stream!("./data/a.txt") 
+    {graph, iroom, room_state, pid_to_label} = File.stream!(world_file_path) 
     |> Stream.map(fn line -> String.trim(line) end) #Remove \n
     |> Stream.map(fn line -> String.split(line, ",") end)
     |> Enum.reduce({:digraph.new(), nil, %{}, %{}},
       fn args, acc ->
         {graph, iroom, room_state, pid_to_label} = acc
-        [label, enemies_amount | connections] = args
+        [label, enemies_amount, type | connections] = args
 
-        iroom = if iroom == nil do label else iroom end
+        iroom = if type == "start" do label else iroom end
 
         {enemies_amount, _} = Integer.parse(enemies_amount)
 
-        room_pid = Room.start_link(world, enemies_amount)
+        room_pid = Room.start_link(world, enemies_amount, type)
         room_state = Map.put(room_state, label, [room_pid, enemies_amount])
         pid_to_label = Map.put(pid_to_label, room_pid, label)
         :digraph.add_vertex(graph, label)
@@ -56,37 +71,85 @@ defmodule World do
 
         {graph, iroom, room_state, pid_to_label}
       end)
-    {:ok, initial_state}
-  end
 
-  @impl true
-  def handle_call(:get_starting_room, _from, {graph, iroom, room_state, pid_to_label}) do
-    [iroom_pid | _] = Map.get(room_state, iroom)
-    {:reply, iroom_pid, {graph, iroom, room_state, pid_to_label}}
+    state = %{
+      graph: graph,
+      iroom: iroom,
+      room_state: room_state,
+      pid_to_label: pid_to_label,
+      max_players: max_players,
+      players: 0,
+      finished: false
+    }
+
+    {:ok, state}
   end
   
   @impl true
-  def handle_call({:add_player, player}, _from, {graph, iroom, room_state, pid_to_label}) do
+  def handle_call(:finish, _from, state) do
+    new_state = %{state | finish: true}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:finished?, _from, state) do
+    {:reply, state.finished, state}
+  end
+
+  @impl true
+  def handle_call(:full?, _from, state) do
+    is_full = state.players == state.max_players
+    {:reply, is_full, state}
+  end
+
+  @impl true
+  def handle_call({:add_player, player}, _from, state) do
+    %{
+      room_state: room_state,
+      iroom: iroom,
+      players: players
+    } = state
+    
     [iroom_pid | _] = Map.get(room_state, iroom)
     Room.add_player(iroom_pid, player)
-    {:reply, :ok, {graph, iroom, room_state, pid_to_label}}
+    
+    new_state = %{state | players: (players + 1)}
+
+    {:reply, :ok, new_state}
   end
 
   @impl true
-  def handle_call({:get_directions, room}, _from, {graph, iroom, room_state, pid_to_label}) do
+  def handle_call({:remove_player, _player}, _from, state) do
+    new_state = %{state | players: (state.players - 1)}
+
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call({:get_directions, room}, _from, state) do
+    %{
+      pid_to_label: pid_to_label,
+      graph: graph
+    } = state
+
     room_label = Map.get(pid_to_label, room)
     directions = :digraph.out_neighbours(graph, room_label)
-    {:reply, directions, {graph, iroom, room_state, pid_to_label}}
+    {:reply, directions, state}
   end
 
   @impl true
-  def handle_call({:get_room, room, direction}, _from, {graph, iroom, room_state, pid_to_label}) do
+  def handle_call({:get_room, room, direction}, _from, state) do
+    %{
+      pid_to_label: pid_to_label,
+      graph: graph,
+      room_state: room_state
+    } = state
+
     room_label = Map.get(pid_to_label, room)
     next_room_pid = if direction in :digraph.out_neighbours(graph, room_label) do
       [next_room_pid, _] = Map.get(room_state, direction)
       next_room_pid
     end
-    {:reply, next_room_pid, {graph, iroom, room_state, pid_to_label}}
+    {:reply, next_room_pid, state}
   end
-  
 end

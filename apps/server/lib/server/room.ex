@@ -1,13 +1,14 @@
 defmodule Room do
   defmodule State do
-    defstruct [:world, :enemies, :players, :turn, :turn_order]
+    defstruct [:world, :enemies, :players, :turn, :turn_order, :type]
 
     @type t() :: %__MODULE__{
             world: World.t(),
             enemies: list | nil,
             players: list | nil,
             turn: atom | nil,
-            turn_order: map | nil
+            turn_order: map | nil,
+            type: String.t()
           }
   end
 
@@ -27,9 +28,9 @@ defmodule Room do
 
   # Public API
 
-  @spec start_link(world, integer) :: pid
-  def start_link(world, enemies_amount) do
-    {_, room} = GenServer.start_link(__MODULE__, {world, enemies_amount})
+  @spec start_link(world, integer, integer) :: pid
+  def start_link(world, enemies_amount, flags) do
+    {_, room} = GenServer.start_link(__MODULE__, {world, enemies_amount, flags})
     room
   end
 
@@ -58,9 +59,9 @@ defmodule Room do
   # Handlers
 
   @impl true
-  def init({world, enemies_amount}) do
+  def init({world, enemies_amount, type}) do
     room = self()
-    enemies = EnemyCreator.create_enemies(:basic_room, room, enemies_amount)
+    enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
     initial_state = %State{
@@ -68,7 +69,8 @@ defmodule Room do
       enemies: enemies,
       players: [],
       turn: :player,
-      turn_order: turn_order
+      turn_order: turn_order,
+      type: type
     }
 
     {:ok, initial_state}
@@ -76,17 +78,19 @@ defmodule Room do
 
   @impl true
   def handle_call({:attack, attacker, defender, amount, room, stance}, _from, state) do
-    state = _attack_handler(attacker, defender, amount, room, state, stance)
-    {:reply, state, state}
+    {error, new_state} = _attack_handler(attacker, defender, amount, room, state, stance)
+    {:reply, error, new_state}
   end
 
   @impl true
   def handle_call({:add_player, player, room}, _from, state) do
     %{
+      world: world,
       players: players,
       enemies: _enemies,
       turn_order: turn_order,
-      turn: turn
+      turn: turn,
+      type: type
     } = state
 
     turn_order =
@@ -99,6 +103,16 @@ defmodule Room do
     players = players ++ [player]
 
     Player.set_room(player, room)
+
+    if type == "safe" do
+      Player.heal(player)
+    else
+      if type == "exit" do
+        Player.finish(player)
+        World.finish(world)
+      end
+    end
+
     {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
   end
 
@@ -141,7 +155,21 @@ defmodule Room do
         state
       end
 
-    {:reply, :ok, new_state}
+    error = next_room == nil or length(enemies) != 0
+
+    msg =
+      cond do
+        next_room == nil -> "Invalid Direction"
+        length(enemies) != 0 -> "There are enemies in the room"
+        true -> "No error"
+      end
+
+    {:reply,
+     {if error do
+        :error
+      else
+        :ok
+      end, msg}, new_state}
   end
 
   @impl true
@@ -157,7 +185,7 @@ defmodule Room do
 
   @impl true
   def handle_cast({:attack, attacker, defender, amount, room}, state) do
-    new_state = _attack_handler(attacker, defender, amount, room, state, nil)
+    {_error, new_state} = _attack_handler(attacker, defender, amount, room, state, nil)
     {:noreply, new_state}
   end
 
@@ -171,12 +199,14 @@ defmodule Room do
 
     # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
     if attacker in players and defender in enemies do
-      _attack_enemie(attacker, defender, amount, state, room, stance)
+      {error, new_state} = _attack_enemie(attacker, defender, amount, state, room, stance)
+      {error, new_state}
     else
       if attacker in enemies and defender in players do
-        _attack_player(attacker, defender, amount, state, room)
+        new_state = _attack_player(attacker, defender, amount, state, room)
+        {{:ok, "No Error"}, new_state}
       else
-        state
+        {{:error, "Invalid Attack"}, state}
       end
     end
   end
@@ -196,9 +226,9 @@ defmodule Room do
       } = new_state
 
       GenServer.cast(room, {:change_turn, player, players, enemies, :enemie})
-      new_state
+      {{:ok, "No Error"}, new_state}
     else
-      state
+      {{:error, "Its not your turn"}, state}
     end
   end
 
@@ -224,41 +254,22 @@ defmodule Room do
   end
 
   def _attack(enemie, player, direction, amount, state, stance) do
-    %{
-      enemies: enemies,
-      players: players
-    } = state
-
     # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
-    health =
-      if enemie in enemies and player in players do
-        if direction == :player do
-          Enemie.be_attacked(enemie, amount, stance)
-          # if health == 0, do: _remove_enemie(room, enemie)
-          # health
-        else
-          Player.be_attacked(player, amount, stance)
-          # if health == 0, do: _remove_player(room, player)
-          # health
-        end
-      else
-        # Si no estan en la sala no deberian poder atacarse
-        -1
-      end
-
-    # TODO: El codigo se podría refactorizar a como como está arriba (comentado).
-    # Realmente no hace falta volver a preguntar acá la direction
-
-
-    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
-    if health == 0 do
-      if direction == :player do
+    if direction == :player do
+      health = Enemie.be_attacked(enemie, amount, stance)
+      if health == 0 do
         _remove_enemie(enemie, state)
       else
-        _remove_player(player, state)
+        state
       end
     else
-      state
+      health = Player.be_attacked(player, amount, stance)
+
+      if health == 0 do
+        _remove_player(player, state)
+      else
+        state
+      end
     end
   end
 
