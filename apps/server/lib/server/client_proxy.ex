@@ -3,8 +3,8 @@ defmodule ClientProxy do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, :ok, opts)
+  def start_link(world, opts \\ []) do
+    GenServer.start_link(__MODULE__, world, opts)
   end
 
   def attack(pid, name) do
@@ -14,74 +14,79 @@ defmodule ClientProxy do
   def move(pid, direction) do
     GenServer.call(pid, {:move, direction})
   end
+  
+  def hello_server(pid, client) do
+    GenServer.call(pid, {:hello_server, client})
+  end
 
-  def get_state(pid) do
-    GenServer.call(pid, :get_state)
+  def receive_state(pid, state) do
+    GenServer.cast(pid, {:receive_state, state})
   end
 
   # GenServer API
 
   @impl true
-  def init(:ok) do
-    # Empieza el server, crea el usuario (por ahora lo harcodeamos asi luego se crearia al conectarse), crea el world y obtiene la start_room
+  def init(world) do
+    player = Player.start_link(100, :paper, self())
+    World.add_player(world, player)
 
-    player = Player.start_link(100, :rock)
-    world = World.start_link()
-    room = World.get_starting_room(world)
-
-    # Aca se conecta un usuario, se agrega el usuario a la room y se le devuelve el pid del usuario
-    Room.add_player(room, player)
-
-    {:ok, {player, room}}
+    {:ok, {nil, player}}
   end
 
   @impl true
-  def handle_call({:attack, enemy}, _from, {player, room}) do
-    Player.attack(player, enemy)
-    {:reply, :ok, {player, room}}
+  def handle_call({:attack, enemy}, _from, state) do
+    Player.attack(state.player, enemy)
+    {:reply, :ok, state}
   end
 
   @impl true
-  def handle_call({:move, direction}, _from, {player, _}) do
-    Player.move(player, direction)
-    room = Player.get_room(player)
-    {:reply, direction, {player, room}}
+  def handle_call({:move, direction}, _from, state) do
+    Player.move(state.player, direction)
+    {:reply, direction, state}
+  end
+  
+  @impl true
+  def handle_call({:hello_server, client}, _from, {_, player}) do
+    {:reply, :ok, {client, player}}
   end
 
   @impl true
-  def handle_call(:get_state, _from, {player, room}) do
+  def handle_cast({:receive_state, recv_state}, state) do
     %{
       enemies: enemies,
       players: players,
       turn: turn
-    } = Room.get_state(room)
+    } = recv_state
+    
+    s_enemies = _serialize_entities_state(enemies)
+    s_players = _serialize_entities_state(players)
+    s_player = List.first(Enum.filter(s_players, fn p_state -> p_state.id == state.player end))
 
-    state = %{
-      :player => player,
+    send_state = %{
       :turn => turn,
-      :enemies => _get_entities_state(enemies, &Enemie.get_state/1),
-      :players => _get_entities_state(players, &Player.get_state/1)
+      :player => s_player,
+      :players => s_players,
+      :enemies => s_enemies
     }
+    
+    IServerProxy.receive_state(state.client, send_state)
 
-    {:reply, state, {player, room}}
+    {:noreply, state}
   end
 
-  # Optimization:
-  # We could do something like a js wait_all.
-  # Enemie and Player will have to provide an async_get_state
-  # Then ClientProxy could implement a handle_info where it receives the responses
-  defp _get_entities_state(entities, callback) do
+  defp _serialize_entities_state(entities) do
+    serialize_state = fn entity ->
+      id = elem(entity, 0)  
+      state = elem(entity, 1)
+      
+      %{
+        id: id,
+        health: state.health,
+        stance: state.stance
+      }
+    end
+    
     entities
-    |> Enum.map(fn entity -> _serialize_entity_state(entity, callback) end)
-  end
-
-  defp _serialize_entity_state(entity, callback) do
-    state = callback.(entity)
-
-    {
-      entity,
-      state.health,
-      state.stance
-    }
+      |> Enum.map(serialize_state)
   end
 end

@@ -248,8 +248,9 @@ defmodule Room do
 
     # TODO: El codigo se podría refactorizar a como como está arriba (comentado).
     # Realmente no hace falta volver a preguntar acá la direction
-    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
 
+
+    # Se que esto se ve horrible pero es la fomra correcta de hacerlo en elixir, las variables son inmutables, asi que no se puede cambiar el valor de una variable adentro de un if
     if health == 0 do
       if direction == :player do
         _remove_enemie(enemie, state)
@@ -297,14 +298,23 @@ defmodule Room do
 
     new_state = %State{state | turn: new_turn, turn_order: new_turn_order}
 
-    if change_turn and turn == :player do
-      for player <- defendees do
-        Player.receive_state(player, new_state)
-      end
-    end
+    _broadcast_game_state(change_turn, turn, defendees, attackees)
 
     new_state
   end
+  
+  def _broadcast_game_state(true, :player, players, enemies) do
+    
+    new_state = %{
+      enemies => Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
+      players => Enum.map(players, fn player -> {player, Player.get_state(player)} end),
+      turn: :player
+    }
+
+    Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
+  end
+
+  def _broadcast_game_state(_, _, _, _), do: :ok
 
   def _remove_enemie(enemie, state) do
     %{

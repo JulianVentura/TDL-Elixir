@@ -12,6 +12,10 @@ defmodule World do
   def get_starting_room(world) do
     GenServer.call(world, :get_starting_room)
   end
+  
+  def add_player(world, player) do
+    GenServer.call(world, {:add_player, player})
+  end
 
   def get_neighbours(world, room) do
     GenServer.call(world, {:get_directions, room})
@@ -20,6 +24,7 @@ defmodule World do
   def get_neighbours(world, room, direction) do
     GenServer.call(world, {:get_room, room, direction})
   end
+
 
   # Handlers
 
@@ -58,6 +63,13 @@ defmodule World do
   def handle_call(:get_starting_room, _from, {graph, iroom, room_state, pid_to_label}) do
     [iroom_pid | _] = Map.get(room_state, iroom)
     {:reply, iroom_pid, {graph, iroom, room_state, pid_to_label}}
+  end
+  
+  @impl true
+  def handle_call({:add_player, player}, _from, {graph, iroom, room_state, pid_to_label}) do
+    [iroom_pid | _] = Map.get(room_state, iroom)
+    Room.add_player(iroom_pid, player)
+    {:reply, :ok, {graph, iroom, room_state, pid_to_label}}
   end
 
   @impl true

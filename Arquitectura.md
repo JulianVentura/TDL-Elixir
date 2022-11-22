@@ -6,26 +6,37 @@ Este documento tiene como objetivo establecer las responsabilidades y funcionali
 
 A continuación se detallan las entidades del modelo.
 
+
+
 ### Client
 
 * Renderiza la GUI al cliente y recibe sus inputs, a través de la consola.
+* Interactúa con el GameMaker para iniciar una partida, luego con el ClientProxy.
+  
+
+### ClientProxy
+
 * Representa al cliente dentro del back del GameEngine.
 * Existirá uno por cada cliente conectado al juego.
+* Interactúa con Player para realizar las acciones y recibir actualizaciones del juego.
+* 
 
 ### GameMaker
 
-* Interactúa con el cliente para asignarlo a una nueva GameSession
-* Interactúa con las GameSession
+* Interactúa con el cliente para asignarlo a un nuevo World
+* Spawnea un nuevo World si así corresponde (si no existe alguno con partida no comenzada)
+  
 
-### GameSession
+### World
 
 * Responsable de la partida actual de N jugadores.
 * Administra los R rooms que contienen el mapa a ser jugado, interactuando con entidad Room.
+  
 
 ### Room
 
 * Ejecuta la lógica del juego interactuando con todas las entidades presentes en una habitación.
-* Interactua con Client y con Enemy
+* Interactua con Player y con Enemy
 
 
 

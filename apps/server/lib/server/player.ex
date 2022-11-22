@@ -1,10 +1,11 @@
 defmodule Player do
   defmodule State do
-    defstruct [:entity, :room]
+    defstruct [:entity, :room, :client]
 
     @type t() :: %__MODULE__{
             entity: pid | atom | nil,
-            room: pid | atom | nil
+            room: pid | atom | nil,
+            client: pid | atom | nil
           }
   end
 
@@ -16,13 +17,14 @@ defmodule Player do
   @type health :: non_neg_integer()
   @type stance :: atom
   @type room :: pid | atom
+  @type client :: pid | atom
 
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(health, stance) :: pid
-  def start_link(health, initial_stance) do
-    {_, player} = GenServer.start_link(__MODULE__, {health, initial_stance})
+  @spec start_link(health, stance, client) :: pid
+  def start_link(health, initial_stance, client) do
+    {_, player} = GenServer.start_link(__MODULE__, {health, initial_stance, client})
     player
   end
 
@@ -64,9 +66,9 @@ defmodule Player do
   end
 
   @impl true
-  def init({health, initial_stance}) do
+  def init({health, initial_stance, client}) do
     entity = Entity.start_link(health, initial_stance)
-    state = %State{entity: entity, room: nil}
+    state = %State{entity: entity, room: nil, client: client}
 
     {:ok, state}
   end
@@ -111,8 +113,10 @@ defmodule Player do
   end
 
   @impl true
-  def handle_cast({:receive_state, _state_received}, state) do
-    # TODO: Mandar nuevo estado a client proxy
+  def handle_cast({:receive_state, state_received}, state) do
+    # TODO: Estaría bueno que Player no dependa de ClientProxy
+    # Se podrá inyectar un callback para no tener que llamar explicitamente?
+    ClientProxy.receive_state(state.client, state_received)
     {:noreply, state}
   end
 end
