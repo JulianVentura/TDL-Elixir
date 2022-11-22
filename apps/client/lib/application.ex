@@ -7,10 +7,13 @@ defmodule Client.Application do
 
   @impl true
   def start(_type, _args) do
+    server_name = :server@localhost
+
+    Node.connect(server_name)
+
     children = [
-      Client.Client
-      # Starts a worker by calling: Client.Worker.start_link(arg)
-      # {Client.Worker, arg}
+      CommandParser,
+      {ServerProxy, server_name}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
