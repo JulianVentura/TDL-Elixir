@@ -1,6 +1,4 @@
 defmodule IClientProxy do
-  require GenServer # TODO: ver si esto anda
-
   # Client API
 
   def attack(pid, name) do
