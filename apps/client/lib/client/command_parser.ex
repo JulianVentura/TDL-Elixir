@@ -44,12 +44,13 @@ defmodule CommandParser do
   end
 
   defp _attack(enemy) do
-    ServerProxy.attack(TempProxy, IEx.Helpers.pid(enemy))
+    # TODO: sacar IEx.Helpers.pid cuando este hecho el mapeo
+    ServerProxy.attack(CServerProxy, IEx.Helpers.pid(enemy))
     "Atacaste #{enemy}\n"
   end
 
   defp _move(direction) do
-    ServerProxy.move(TempProxy, direction)
+    ServerProxy.move(CServerProxy, direction)
     "Mover a dirección #{direction}\n"
   end
 

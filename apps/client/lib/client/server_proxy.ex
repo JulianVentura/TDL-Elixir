@@ -4,7 +4,7 @@ defmodule ServerProxy do
   # Client API
 
   def start_link(server_name) do
-    GenServer.start_link(__MODULE__, server_name, name: ServerProxy)
+    GenServer.start_link(__MODULE__, server_name, name: CServerProxy)
   end
 
   def attack(pid, enemy) do
