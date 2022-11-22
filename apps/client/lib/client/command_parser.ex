@@ -19,6 +19,7 @@ defmodule CommandParser do
       |> String.trim()
       |> String.split(" ")
 
+    # TODO: ver como manejar en caso de comando erroneo, por proxy o acá con su respuesta
     _process_command(command)
     run()
   end
@@ -46,16 +47,14 @@ defmodule CommandParser do
   defp _attack(enemy) do
     # TODO: sacar IEx.Helpers.pid cuando este hecho el mapeo
     ServerProxy.attack(CServerProxy, IEx.Helpers.pid(enemy))
-    "Atacaste #{enemy}\n"
   end
 
   defp _move(direction) do
     ServerProxy.move(CServerProxy, direction)
-    "Mover a dirección #{direction}\n"
   end
 
   defp _exit() do
-    # TODO: ver que hacer
+    # TODO: ver que hacer para salir
     exit("Gracias por jugar")
   end
 end
