@@ -140,6 +140,8 @@ defmodule Player do
   def handle_cast({:receive_state, state_received}, state) do
     # TODO: Estaría bueno que Player no dependa de ClientProxy
     # Se podrá inyectar un callback para no tener que llamar explicitamente?
+    IO.inspect("Receiving state: ")
+    IO.inspect(state_received)
     ClientProxy.receive_state(state.client, state_received)
     {:noreply, state}
   end

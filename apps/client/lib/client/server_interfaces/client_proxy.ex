@@ -1,6 +1,6 @@
 defmodule IClientProxy do
   # Client API
-  
+
   def hello_server(pid, client) do
     GenServer.call(pid, {:hello_server, client})
   end
@@ -9,8 +9,8 @@ defmodule IClientProxy do
     GenServer.call(pid, {:attack, name})
   end
 
-  def move(pid, direction) do
-    GenServer.call(pid, {:move, direction})
+  def move(pid, room) do
+    GenServer.call(pid, {:move, room})
   end
 
   def get_state(pid) do

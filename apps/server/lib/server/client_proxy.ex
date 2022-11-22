@@ -73,6 +73,9 @@ defmodule ClientProxy do
       enemies: s_enemies,
       rooms: rooms 
     }
+
+    IO.inspect("Sending state: ")
+    IO.inspect(send_state)
     
     IServerProxy.receive_state(state.client, send_state)
 
