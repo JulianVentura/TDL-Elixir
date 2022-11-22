@@ -25,15 +25,22 @@ defmodule ServerProxy do
   def init(server_name) do
     {node_address, client_proxy_name} = IGameMaker.new_game({ GameMaker, server_name }) # TODO: ver
 
-    Node.connect(node_address)
+    if Node.connect(node_address) do
+      client_proxy = {node_address, client_proxy_name}
+      IClientProxy.hello_server(client_proxy, {node(), self()})
+      # TODO: creo que puede romper con el estado vacío en los handle_call attack y move
+      state = %{}
 
-    client_proxy = {node_address, client_proxy_name}
+      {:ok, {client_proxy, state}}
+    else
+      reason = """
+        No se pudo conectar al ClientProxy.
+        node_address: #{node_address}
+        client_proxy_name:#{client_proxy_name}
+      """
 
-    IClientProxy.hello_server(client_proxy, {node(), self()})
-    # TODO: creo que puede romper con el estado vacío en los handle_call attack y move
-    state = %{}
-
-    {:ok, {client_proxy, state}}
+      {:stop, reason}
+    end
   end
 
   @impl true
