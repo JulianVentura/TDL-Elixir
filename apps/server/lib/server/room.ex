@@ -68,6 +68,9 @@ defmodule Room do
     enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
 
+    ref_to_pid =
+      enemies |> Enum.map(fn enemie -> {Process.monitor(enemie), enemie} end) |> Map.new()
+
     initial_state = %State{
       world: world,
       enemies: enemies,
@@ -75,7 +78,7 @@ defmodule Room do
       turn: :player,
       turn_order: turn_order,
       type: type,
-      ref_to_pid: %{}
+      ref_to_pid: ref_to_pid
     }
 
     {:ok, initial_state}
@@ -97,7 +100,8 @@ defmodule Room do
       enemies: enemies,
       turn_order: turn_order,
       turn: turn,
-      type: type
+      type: type,
+      ref_to_pid: ref_to_pid
     } = state
 
     turn_order =
@@ -108,7 +112,7 @@ defmodule Room do
       )
 
     players = players ++ [player]
-
+    ref_to_pid = _monitor(ref_to_pid, player)
     Player.set_room(player, room)
 
     {player_turn, _} =
@@ -128,7 +132,8 @@ defmodule Room do
       end
     end
 
-    {:reply, :ok, %State{state | turn_order: turn_order, players: players}}
+    {:reply, :ok,
+     %State{state | turn_order: turn_order, players: players, ref_to_pid: ref_to_pid}}
   end
 
   @impl true
@@ -209,27 +214,36 @@ defmodule Room do
     {_error, new_state} = _attack_handler(attacker, defender, amount, room, state, nil)
     {:noreply, new_state}
   end
-  
+
   @impl true
   def handle_info({:DOWN, ref, _, _, _}, state) do
     %{
       ref_to_pid: ref_to_pid,
       players: players,
-      enemies: enemies
+      enemies: enemies,
+      turn: turn
     } = state
+
+    Logger.info(
+      "Room #{inspect(self())}: DOWN message received, player #{inspect(ref_to_pid[ref])}"
+    )
+
     {pid, ref_to_pid} = Map.pop(ref_to_pid, ref)
+    new_state = _change_turn(pid, players, enemies, turn, state)
 
-    players = List.delete(players, pid) 
-    enemies = List.delete(enemies, pid)    
+    turn_order = Map.delete(new_state.turn_order, pid)
+    enemies = List.delete(new_state.enemies, pid)
+    players = List.delete(new_state.players, pid)
 
-    new_state = %{
-      state | 
-      ref_to_pid: ref_to_pid,
-      playes: players,
-      enemies: enemies
+    new_state2 = %{
+      new_state
+      | ref_to_pid: ref_to_pid,
+        playes: players,
+        enemies: enemies,
+        turn_order: turn_order
     }
 
-    {:noreply, new_state}
+    {:noreply, new_state2}
   end
 
   # Private functions
@@ -323,8 +337,8 @@ defmodule Room do
     } = state
 
     turn_order = Map.put(turn_order, attacker, false)
-    change_turn = List.last(attackees) == attacker
 
+    change_turn = List.last(attackees) == attacker
     new_turn = if change_turn, do: turn, else: state.turn
 
     new_turn_order =
@@ -412,7 +426,7 @@ defmodule Room do
         players: List.delete(players, player)
     }
   end
-  
+
   def _monitor(ref_to_pid, pid) do
     ref = Process.monitor(pid)
     Map.put(ref_to_pid, ref, pid)
