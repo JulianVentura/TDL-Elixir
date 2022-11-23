@@ -1,2 +1,2 @@
-B,2,boss,A
-A,2,start,B
+B,2,test,A
+A,0,start,B

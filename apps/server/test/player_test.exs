@@ -4,22 +4,22 @@ defmodule ClientProxyMock do
     client
   end
 
-  @impl true
   def init(:ok) do
     {:ok, :ok}
   end
 
-  @impl true
-  def handle_cast({:receive_state, recv_state}, state) do
+  def handle_cast({:receive_state, _recv_state}, _state) do
     {:noreply, :ok}
   end
 end
 
 defmodule PlayerTest do
   use ExUnit.Case
+  require Logger
   doctest Player
 
   test "creates succesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_1.txt", 4)
@@ -40,11 +40,14 @@ defmodule PlayerTest do
   end
 
   test "attack succesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_2.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player)
+    Player.move(player, "B")
+    room = Player.get_room(player)
 
     %{
       enemies: enemies
@@ -61,12 +64,16 @@ defmodule PlayerTest do
   end
 
   test "attack and receive damage" do
+    Logger.configure(level: :none)
+
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player)
+    Player.move(player, "B")
+    room = Player.get_room(player)
 
     %{
       enemies: enemies
@@ -86,12 +93,16 @@ defmodule PlayerTest do
   end
 
   test "attack , receive damage and attack again" do
+    Logger.configure(level: :none)
+
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player)
+    Player.move(player, "B")
+    room = Player.get_room(player)
 
     %{
       enemies: enemies
@@ -119,6 +130,7 @@ defmodule PlayerTest do
   end
 
   test "move succesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_4.txt", 4)
@@ -133,9 +145,10 @@ defmodule PlayerTest do
   end
 
   test "move unsuccesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    world = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -147,13 +160,16 @@ defmodule PlayerTest do
   end
 
   test "add two players succesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
     room1 = Player.get_room(player1)
     room2 = Player.get_room(player2)
 
@@ -167,13 +183,16 @@ defmodule PlayerTest do
   end
 
   test "attack two players succesfully" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
     room1 = Player.get_room(player1)
     room2 = Player.get_room(player2)
 
@@ -202,13 +221,16 @@ defmodule PlayerTest do
   end
 
   test "second player cant attack before first" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
     room1 = Player.get_room(player1)
     room2 = Player.get_room(player2)
 
@@ -229,13 +251,16 @@ defmodule PlayerTest do
   end
 
   test "first player cant attack twice" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
     room1 = Player.get_room(player1)
     room2 = Player.get_room(player2)
 
@@ -263,13 +288,16 @@ defmodule PlayerTest do
   end
 
   test "attack two players twice" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_5.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
     room1 = Player.get_room(player1)
     room2 = Player.get_room(player2)
 
@@ -316,9 +344,10 @@ defmodule PlayerTest do
   end
 
   test "move error" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    world = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
     {error, msg} = Player.move(player, "B")
@@ -330,6 +359,7 @@ defmodule PlayerTest do
   end
 
   test "attack error" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
@@ -347,13 +377,17 @@ defmodule PlayerTest do
   end
 
   test "attack turn error" do
+    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_5.txt", 4)
-    room = World.get_first_room(world)
-    Room.add_player(room, player1)
-    Room.add_player(room, player2)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
+    room = Player.get_room(player1)
     %{enemies: enemies} = Room.get_state(room)
 
     {error, msg} = Player.attack(player2, List.first(enemies))

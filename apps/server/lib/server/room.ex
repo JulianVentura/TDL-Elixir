@@ -419,8 +419,8 @@ defmodule Room do
       turn: turn
     }
 
-    IO.inspect("Broadcast state: ")
-    IO.inspect(new_state)
+    Logger.info("Broadcast state: ")
+    Logger.info(inspect(new_state))
 
     Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
   end
