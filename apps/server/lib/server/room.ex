@@ -116,7 +116,8 @@ defmodule Room do
     Player.set_room(player, room)
 
     {player_turn, _} =
-      turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first()
+      turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first() ||
+        {nil, nil}
 
     _broadcast_game_state(true, player_turn, players, enemies, world)
 
