@@ -121,7 +121,8 @@ defmodule Room do
     else
       if type == "exit" do
         Player.finish(player)
-        World.finish(world) # TODO: Revisar esto
+        # TODO: Revisar esto
+        World.finish(world)
       end
     end
 
@@ -160,7 +161,10 @@ defmodule Room do
 
     new_state =
       if next_room != nil and length(enemies) == 0 do
-        Logger.info("Room #{inspect self()}: Moving player #{inspect player} to #{inspect next_room}")
+        Logger.info(
+          "Room #{inspect(self())}: Moving player #{inspect(player)} to #{inspect(next_room)}"
+        )
+
         new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
         new_state
@@ -301,7 +305,7 @@ defmodule Room do
     new_turn_order =
       if change_turn do
         if turn == :enemie do
-          _broadcast_game_state(true, nil, defendees, attackees, state.world)
+          _broadcast_game_state(true, nil, attackees, defendees, state.world)
           for d <- defendees, into: turn_order, do: {d, true}
         else
           _broadcast_game_state(true, List.first(defendees), defendees, attackees, state.world)

@@ -76,7 +76,7 @@ defmodule Enemie do
   end
 
   @spec _get_state(id, key) :: state_attribute
-  defp _get_state(player, key) do
-    Agent.get(player, &Map.get(&1, key))
+  defp _get_state(enemie, key) do
+    Agent.get(enemie, &Map.get(&1, key))
   end
 end
