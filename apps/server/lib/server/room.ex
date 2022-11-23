@@ -316,7 +316,7 @@ defmodule Room do
           Enum.at(attackees, Enum.find_index(attackees, fn x -> x == attacker end) + 1)
 
         _broadcast_game_state(
-          new_turn,
+          true,
           next_attacker,
           attackees,
           defendees,
