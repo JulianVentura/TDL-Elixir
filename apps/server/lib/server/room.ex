@@ -258,17 +258,15 @@ defmodule Room do
       enemies: enemies
     } = state
 
-    # TODO: Esto se puede reemplazar por un cond (es más elixir) (incluso quizas con un case)
-    if attacker in players and defender in enemies do
-      {error, new_state} = _attack_enemie(attacker, defender, amount, state, room, stance)
-      {error, new_state}
-    else
-      if attacker in enemies and defender in players do
-        new_state = _attack_player(attacker, defender, amount, state, room)
-        {{:ok, "No Error"}, new_state}
-      else
+    cond do
+      attacker in players and defender in enemies ->
+        _attack_enemie(attacker, defender, amount, state, room, stance)
+
+      attacker in enemies and defender in players ->
+        {{:ok, "No Error"}, _attack_player(attacker, defender, amount, state, room)}
+
+      true ->
         {{:error, "Invalid Attack"}, state}
-      end
     end
   end
 
@@ -324,22 +322,22 @@ defmodule Room do
 
   def _attack(enemie, player, direction, amount, state, stance) do
     # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
-    if direction == :player do
-      health = Enemie.be_attacked(enemie, amount, stance)
+    case direction do
+      :player ->
+        health = Enemie.be_attacked(enemie, amount, stance)
 
-      if health == 0 do
-        _remove_enemie(enemie, state)
-      else
-        state
-      end
-    else
-      health = Player.be_attacked(player, amount, stance)
+        case health do
+          0 -> _remove_enemie(enemie, state)
+          _ -> state
+        end
 
-      if health == 0 do
-        _remove_player(player, state)
-      else
-        state
-      end
+      :enemie ->
+        health = Player.be_attacked(player, amount, stance)
+
+        case health do
+          0 -> _remove_player(player, state)
+          _ -> state
+        end
     end
   end
 
@@ -358,51 +356,53 @@ defmodule Room do
     new_turn = if change_turn, do: turn, else: state.turn
 
     new_turn_order =
-      if change_turn do
-        if turn == :enemie do
-          _broadcast_game_state(true, nil, attackees, defendees, state.world)
-          for d <- defendees, into: turn_order, do: {d, true}
-        else
+      case {change_turn, turn} do
+        {true, :player} ->
           _broadcast_game_state(true, List.first(defendees), defendees, attackees, state.world)
           Map.put(turn_order, List.first(defendees), true)
-        end
-      else
-        next_attacker =
-          Enum.at(attackees, Enum.find_index(attackees, fn x -> x == attacker end) + 1)
 
-        if turn == :enemie do
-          _broadcast_game_state(
-            true,
+        {true, :enemie} ->
+          _broadcast_game_state(true, nil, attackees, defendees, state.world)
+
+          for enemie <- defendees do
+            %{player: player_to_attack, amount: amount} =
+              Enemie.choose_player_to_attack(enemie, attackees)
+
+            GenServer.cast(self(), {:attack, enemie, player_to_attack, amount, self()})
+          end
+
+          for d <- defendees, into: turn_order, do: {d, true}
+
+        {false, turn} ->
+          next_attacker =
+            Enum.at(attackees, Enum.find_index(attackees, fn x -> x == attacker end) + 1)
+
+          case turn do
+            :player ->
+              _broadcast_game_state(
+                true,
+                next_attacker,
+                defendees,
+                attackees,
+                state.world
+              )
+
+            :enemie ->
+              _broadcast_game_state(
+                true,
+                next_attacker,
+                attackees,
+                defendees,
+                state.world
+              )
+          end
+
+          Map.put(
+            turn_order,
             next_attacker,
-            attackees,
-            defendees,
-            state.world
+            true
           )
-        else
-          _broadcast_game_state(
-            true,
-            next_attacker,
-            defendees,
-            attackees,
-            state.world
-          )
-        end
-
-        Map.put(
-          turn_order,
-          next_attacker,
-          true
-        )
       end
-
-    if change_turn and turn == :enemie do
-      for enemie <- defendees do
-        %{player: player_to_attack, amount: amount} =
-          Enemie.choose_player_to_attack(enemie, attackees)
-
-        GenServer.cast(self(), {:attack, enemie, player_to_attack, amount, self()})
-      end
-    end
 
     new_state = %State{state | turn: new_turn, turn_order: new_turn_order}
 
