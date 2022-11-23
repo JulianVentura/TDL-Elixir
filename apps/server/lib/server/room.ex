@@ -225,11 +225,17 @@ defmodule Room do
     } = state
 
     Logger.info(
-      "Room #{inspect(self())}: DOWN message received, player #{inspect(ref_to_pid[ref])}"
+      "Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(ref_to_pid[ref])}"
     )
 
     {pid, ref_to_pid} = Map.pop(ref_to_pid, ref)
-    new_state = _change_turn(pid, players, enemies, turn, state)
+
+    new_state =
+      if pid in players or pid in enemies do
+        _change_turn(pid, players, enemies, turn, state)
+      else
+        state
+      end
 
     turn_order = Map.delete(new_state.turn_order, pid)
     enemies = List.delete(new_state.enemies, pid)
@@ -238,7 +244,7 @@ defmodule Room do
     new_state2 = %{
       new_state
       | ref_to_pid: ref_to_pid,
-        playes: players,
+        players: players,
         enemies: enemies,
         turn_order: turn_order
     }
@@ -276,6 +282,10 @@ defmodule Room do
     } = state
 
     if turn == :player and turn_order[player] do
+      Logger.info(
+        "Room #{inspect(self())}: Player #{inspect(player)} is attacking enemie #{inspect(enemie)} with #{inspect(amount)}"
+      )
+
       new_state = _attack(enemie, player, :player, amount, state, stance)
 
       %{
@@ -295,6 +305,10 @@ defmodule Room do
       turn_order: turn_order,
       enemies: enemies
     } = state
+
+    Logger.info(
+      "Room #{inspect(self())}: enemie #{inspect(enemie)} is attacking player #{inspect(player)} with #{inspect(amount)}"
+    )
 
     if turn == :enemie and turn_order[enemie] do
       new_state = _attack(enemie, player, :enemie, amount, state, Enemie.get_stance(enemie))
@@ -336,6 +350,10 @@ defmodule Room do
       turn_order: turn_order
     } = state
 
+    Logger.info(
+      "Change turn #{inspect(self())}: Changing turn attacker #{inspect(attacker)} attackees #{inspect(attackees)} defendees #{inspect(defendees)} turn #{inspect(turn)}"
+    )
+
     turn_order = Map.put(turn_order, attacker, false)
 
     change_turn = List.last(attackees) == attacker
@@ -354,13 +372,23 @@ defmodule Room do
         next_attacker =
           Enum.at(attackees, Enum.find_index(attackees, fn x -> x == attacker end) + 1)
 
-        _broadcast_game_state(
-          true,
-          next_attacker,
-          attackees,
-          defendees,
-          state.world
-        )
+        if turn == :enemie do
+          _broadcast_game_state(
+            true,
+            next_attacker,
+            attackees,
+            defendees,
+            state.world
+          )
+        else
+          _broadcast_game_state(
+            true,
+            next_attacker,
+            defendees,
+            attackees,
+            state.world
+          )
+        end
 
         Map.put(
           turn_order,
