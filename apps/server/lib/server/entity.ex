@@ -1,8 +1,9 @@
 defmodule Entity do
   defmodule State do
-    defstruct [:max_health, :health, :stance]
+    defstruct [:name, :max_health, :health, :stance]
 
     @type t() :: %__MODULE__{
+            name: String.t(),
             max_health: non_neg_integer() | nil,
             health: non_neg_integer() | nil,
             stance: atom | nil
@@ -12,6 +13,7 @@ defmodule Entity do
   use Agent
   # Public API
 
+  @type name :: String.t()
   @type health :: non_neg_integer()
   @type stance :: atom
   @type id :: pid | atom
@@ -19,9 +21,9 @@ defmodule Entity do
   @type key :: atom
   @type state_attribute :: health | stance
 
-  @spec start_link(health, stance) :: pid
-  def start_link(health, initial_stance) do
-    state = %State{max_health: health, health: health, stance: initial_stance}
+  @spec start_link(name, health, stance) :: pid
+  def start_link(name, health, initial_stance) do
+    state = %State{name: name, max_health: health, health: health, stance: initial_stance}
 
     {:ok, pid} =
       Agent.start_link(

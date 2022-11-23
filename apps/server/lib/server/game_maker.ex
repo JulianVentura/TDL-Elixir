@@ -36,7 +36,7 @@ defmodule GameMaker do
   def set_new_game(worlds, name_service, cli_addr) do
       
       spawn_if_necessary = fn 
-        [] -> [World.start_link("./data/a.txt", 4)]  
+        [] -> [World.start_link("./data/world_0.txt", 4)]  
         v -> v
       end
 

@@ -11,6 +11,7 @@ defmodule Enemie do
   use Agent
   # Public API
 
+  @type name :: String.t()
   @type entity :: pid | atom
   @type id :: pid | atom
   @type health :: non_neg_integer()
@@ -20,9 +21,9 @@ defmodule Enemie do
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(health, stance, pid) :: pid
-  def start_link(health, initial_stance, room) do
-    entity = Entity.start_link(health, initial_stance)
+  @spec start_link(name, health, stance, pid) :: pid
+  def start_link(name, health, initial_stance, room) do
+    entity = Entity.start_link(name, health, initial_stance)
     state = %State{entity: entity, room: room}
 
     {:ok, pid} =

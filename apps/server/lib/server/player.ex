@@ -13,6 +13,7 @@ defmodule Player do
   use GenServer
   # Public API
 
+  @type name :: String.t()
   @type entity :: pid | atom
   @type id :: pid | atom
   @type health :: non_neg_integer()
@@ -23,9 +24,9 @@ defmodule Player do
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(health, stance, client) :: pid
-  def start_link(health, initial_stance, client) do
-    {_, player} = GenServer.start_link(__MODULE__, {health, initial_stance, client})
+  @spec start_link(name, health, stance, client) :: pid
+  def start_link(name, health, initial_stance, client) do
+    {_, player} = GenServer.start_link(__MODULE__, {name, health, initial_stance, client})
     player
   end
 
@@ -77,8 +78,8 @@ defmodule Player do
   end
 
   @impl true
-  def init({health, initial_stance, client}) do
-    entity = Entity.start_link(health, initial_stance)
+  def init({name, health, initial_stance, client}) do
+    entity = Entity.start_link(name, health, initial_stance)
     state = %State{entity: entity, room: nil, client: client}
 
     {:ok, state}
