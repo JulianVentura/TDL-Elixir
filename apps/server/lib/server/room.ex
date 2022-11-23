@@ -299,6 +299,7 @@ defmodule Room do
     new_turn_order =
       if change_turn do
         if turn == :enemie do
+          _broadcast_game_state(true, nil, defendees, attackees, state.world)
           for d <- defendees, into: turn_order, do: {d, true}
         else
           _broadcast_game_state(true, List.first(defendees), defendees, attackees, state.world)
