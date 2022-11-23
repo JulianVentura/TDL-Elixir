@@ -2,7 +2,7 @@ defmodule Room do
   require Logger
 
   defmodule State do
-    defstruct [:world, :enemies, :players, :turn, :turn_order, :type]
+    defstruct [:world, :enemies, :players, :turn, :turn_order, :type, :ref_to_pid]
 
     @type t() :: %__MODULE__{
             world: World.t(),
@@ -10,7 +10,8 @@ defmodule Room do
             players: list | nil,
             turn: atom | nil,
             turn_order: map | nil,
-            type: String.t()
+            type: String.t(),
+            ref_to_pid: map
           }
   end
 
@@ -73,7 +74,8 @@ defmodule Room do
       players: [],
       turn: :player,
       turn_order: turn_order,
-      type: type
+      type: type,
+      ref_to_pid: %{}
     }
 
     {:ok, initial_state}
@@ -205,6 +207,28 @@ defmodule Room do
   @impl true
   def handle_cast({:attack, attacker, defender, amount, room}, state) do
     {_error, new_state} = _attack_handler(attacker, defender, amount, room, state, nil)
+    {:noreply, new_state}
+  end
+  
+  @impl true
+  def handle_info({:DOWN, ref, _, _, _}, state) do
+    %{
+      ref_to_pid: ref_to_pid,
+      players: players,
+      enemies: enemies
+    } = state
+    {pid, ref_to_pid} = Map.pop(ref_to_pid, ref)
+
+    players = List.delete(players, pid) 
+    enemies = List.delete(enemies, pid)    
+
+    new_state = %{
+      state | 
+      ref_to_pid: ref_to_pid,
+      playes: players,
+      enemies: enemies
+    }
+
     {:noreply, new_state}
   end
 
@@ -387,5 +411,10 @@ defmodule Room do
       | turn_order: Map.delete(turn_order, player),
         players: List.delete(players, player)
     }
+  end
+  
+  def _monitor(ref_to_pid, pid) do
+    ref = Process.monitor(pid)
+    Map.put(ref_to_pid, ref, pid)
   end
 end
