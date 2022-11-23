@@ -130,13 +130,12 @@ defmodule Player do
 
   @impl true
   def handle_cast(:finish, state) do
-    Logger.info("Tesoro!")
+    Logger.debug("Tesoro!")
     {:noreply, state}
   end
 
   @impl true
   def handle_cast({:set_room, room}, state) do
-    Logger.info("Set Room")
     new_state = %State{state | room: room}
     {:noreply, new_state}
   end
@@ -145,8 +144,8 @@ defmodule Player do
   def handle_cast({:receive_state, state_received}, state) do
     # TODO: Estaría bueno que Player no dependa de ClientProxy
     # Se podrá inyectar un callback para no tener que llamar explicitamente?
-    Logger.info("Receiving state: ")
-    Logger.info(inspect(state_received))
+    Logger.debug("Receiving state: ")
+    Logger.debug(inspect(state_received))
     ClientProxy.receive_state(state.client, state_received)
     {:noreply, state}
   end

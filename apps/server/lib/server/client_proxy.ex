@@ -28,7 +28,6 @@ defmodule ClientProxy do
     player = Player.start_link("Jugador", 100, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
-    Logger.info("Sale de World.add_player")
 
     {:ok, %{client: cli_addr, player: player}}
   end
@@ -55,11 +54,8 @@ defmodule ClientProxy do
     } = recv_state
     
     players = Enum.map(players, fn player -> {player, Player.get_state(player)} end)
-    Logger.info("Players: ")
-    Logger.info(inspect players)
     s_enemies = _serialize_entities_state(enemies)
     s_players = _serialize_entities_state(players)
-    Logger.info(inspect s_players)
     s_player = List.first(Enum.filter(s_players, fn p_state -> p_state.id == state.player end))
     
     send_state = %{
@@ -70,8 +66,8 @@ defmodule ClientProxy do
       rooms: rooms 
     }
     
-    Logger.info("Sending state to: #{inspect state.client}")
-    Logger.info(send_state)
+    Logger.debug("Sending state to: #{inspect state.client}")
+    Logger.debug(send_state)
      
     IServerProxy.receive_state(state.client, send_state)
 

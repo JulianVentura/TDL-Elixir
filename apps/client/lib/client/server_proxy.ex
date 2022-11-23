@@ -26,7 +26,6 @@ defmodule ServerProxy do
   def init(server_name) do
     Logger.info("Connecting to GameMaker on #{inspect server_name}")
     {client_proxy_name, node_address} = IGameMaker.new_game({ GameMaker, server_name }, {ServerProxy, node()}) # TODO: ver
-    Logger.info(Node.connect(node_address))
 
     if Node.connect(node_address) do
       Logger.info("Connecting to ClientProxy on #{inspect node_address}")
@@ -79,8 +78,8 @@ defmodule ServerProxy do
 
   @impl true
   def handle_cast({:receive_state, received_state}, {client_proxy, _}) do
-    Logger.info("Receive state")
-    Logger.info(inspect received_state)
+    Logger.debug("Receive state")
+    Logger.debug(inspect received_state)
     Drawer.draw(received_state, nil)
 
     {:noreply, {client_proxy, received_state}}

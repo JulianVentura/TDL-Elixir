@@ -143,7 +143,6 @@ defmodule World do
 
     [iroom_pid | _] = Map.get(room_state, iroom)
     Room.add_player(iroom_pid, player)
-    Logger.info("Termina Room.add_player")
 
     new_state = %{state | players: players + 1}
 

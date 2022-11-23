@@ -118,9 +118,7 @@ defmodule Room do
     {player_turn, _} =
       turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first()
 
-    Logger.info("Broadcast")
     _broadcast_game_state(true, player_turn, players, enemies, world)
-    Logger.info("Broadcast después")
 
     if type == "safe" do
       Player.heal(player)
@@ -418,9 +416,6 @@ defmodule Room do
       rooms: World.get_neighbours(world, self()),
       turn: turn
     }
-
-    Logger.info("Broadcast state: ")
-    Logger.info(inspect(new_state))
 
     Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
   end
