@@ -7,8 +7,8 @@ defmodule GameMaker do
     GenServer.start_link(__MODULE__, :ok, name: GameMaker)
   end
 
-  def new_game(maker) do
-    GenServer.call(maker, :new_game)
+  def new_game(maker, addr) do
+    GenServer.call(maker, {:new_game, addr})
   end
 
   # Server API
@@ -23,17 +23,17 @@ defmodule GameMaker do
   end
 
   @impl true
-  def handle_call(:new_game, _from, {worlds, name_service}) do
+  def handle_call({:new_game, cli_addr}, _from, {worlds, name_service}) do
       {result, new_state} = 
         case NameService.full?(name_service) do
           true -> {:error, {worlds, name_service}} # TODO: Here we should redirect the client to another machine or something like that
-          false -> set_new_game(worlds, name_service) 
+          false -> set_new_game(worlds, name_service, cli_addr) 
         end
 
       {:reply, result, new_state}
   end
 
-  def set_new_game(worlds, name_service) do
+  def set_new_game(worlds, name_service, cli_addr) do
       
       spawn_if_necessary = fn 
         [] -> [World.start_link("./data/a.txt", 4)]  
@@ -58,7 +58,7 @@ defmodule GameMaker do
 
       selected_world = List.first not_full
 
-      {:ok, cpid} = ClientProxy.start_link(selected_world)
+      {:ok, cpid} = ClientProxy.start_link(selected_world, cli_addr)
 
       {:ok, name} = NameService.register_process(name_service, cpid)
 

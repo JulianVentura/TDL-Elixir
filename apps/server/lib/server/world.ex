@@ -11,7 +11,7 @@ defmodule World do
   end
 
   def finish(world) do
-    GenServer.call(world, :finish)
+    GenServer.cast(world, :finish)
   end
   
   def finished?(world) do
@@ -22,6 +22,10 @@ defmodule World do
     GenServer.call(world, :full?)
   end
   
+  def get_first_room(world) do
+    GenServer.call(world, :get_first_room)
+  end
+
   def add_player(world, player) do
     GenServer.call(world, {:add_player, player})
   end
@@ -88,9 +92,9 @@ defmodule World do
   end
   
   @impl true
-  def handle_call(:finish, _from, state) do
+  def handle_cast(:finish, state) do
     new_state = %{state | finish: true}
-    {:reply, :ok, new_state}
+    {:noreply, new_state}
   end
 
   @impl true
@@ -105,6 +109,18 @@ defmodule World do
   end
 
   @impl true
+  def handle_call(:get_first_room, _from, state) do
+    %{
+      room_state: room_state,
+      iroom: iroom,
+    } = state
+    
+    [iroom_pid | _] = Map.get(room_state, iroom)
+    
+    {:reply, iroom_pid, state}
+  end
+
+  @impl true
   def handle_call({:add_player, player}, _from, state) do
     Logger.info("World: Adding player #{inspect player}")
     %{
@@ -115,6 +131,7 @@ defmodule World do
     
     [iroom_pid | _] = Map.get(room_state, iroom)
     Room.add_player(iroom_pid, player)
+    Logger.info("Termina Room.add_player")
     
     new_state = %{state | players: (players + 1)}
 

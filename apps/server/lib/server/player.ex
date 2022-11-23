@@ -1,4 +1,5 @@
 defmodule Player do
+  require Logger
   defmodule State do
     defstruct [:entity, :room, :client]
 
@@ -85,7 +86,8 @@ defmodule Player do
 
   @impl true
   def handle_call(:get_state, _from, state) do
-    {:reply, state.entity |> Entity.get_state(), state}
+    s = Entity.get_state(state.entity)
+    {:reply, s, state}
   end
 
   @impl true
@@ -132,6 +134,7 @@ defmodule Player do
 
   @impl true
   def handle_cast({:set_room, room}, state) do
+    Logger.info("Set Room")
     new_state = %State{state | room: room}
     {:noreply, new_state}
   end

@@ -87,7 +87,7 @@ defmodule Room do
 
   @impl true
   def handle_call({:add_player, player, room}, _from, state) do
-    Logger.info("Room #{inspect(self())}: Adding player #{inspect(player)}")
+    Logger.info("Room #{inspect(self())}: Adding player #{inspect(player)}; type #{state.type}")
 
     %{
       world: world,
@@ -112,14 +112,16 @@ defmodule Room do
     {player_turn, _} =
       turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first()
 
+    Logger.info("Broadcast")
     _broadcast_game_state(true, player_turn, players, enemies, world)
+    Logger.info("Broadcast después")
 
     if type == "safe" do
       Player.heal(player)
     else
       if type == "exit" do
         Player.finish(player)
-        World.finish(world)
+        World.finish(world) # TODO: Revisar esto
       end
     end
 
@@ -158,7 +160,7 @@ defmodule Room do
 
     new_state =
       if next_room != nil and length(enemies) == 0 do
-        Logger.info("Room #{inspect(self())}: Moving player #{inspect(player)} to #{next_room}")
+        Logger.info("Room #{inspect self()}: Moving player #{inspect player} to #{inspect next_room}")
         new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
         new_state
@@ -341,7 +343,7 @@ defmodule Room do
   def _broadcast_game_state(true, turn, players, enemies, world) do
     new_state = %{
       enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
-      players: Enum.map(players, fn player -> {player, Player.get_state(player)} end),
+      players: players,
       rooms: World.get_neighbours(world, self()),
       turn: turn
     }
