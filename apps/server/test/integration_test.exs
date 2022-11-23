@@ -13,13 +13,12 @@ defmodule ClientProxyMock do
   end
 end
 
-defmodule PlayerTest do
+defmodule IntegrationTest do
   use ExUnit.Case
   require Logger
   doctest Player
 
   test "creates succesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_1.txt", 4)
@@ -40,7 +39,6 @@ defmodule PlayerTest do
   end
 
   test "attack succesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_2.txt", 4)
@@ -64,8 +62,6 @@ defmodule PlayerTest do
   end
 
   test "attack and receive damage" do
-    Logger.configure(level: :none)
-
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
@@ -93,8 +89,6 @@ defmodule PlayerTest do
   end
 
   test "attack , receive damage and attack again" do
-    Logger.configure(level: :none)
-
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
@@ -130,7 +124,6 @@ defmodule PlayerTest do
   end
 
   test "move succesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_4.txt", 4)
@@ -145,7 +138,6 @@ defmodule PlayerTest do
   end
 
   test "move unsuccesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_6.txt", 4)
@@ -160,7 +152,6 @@ defmodule PlayerTest do
   end
 
   test "add two players succesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
@@ -183,7 +174,6 @@ defmodule PlayerTest do
   end
 
   test "attack two players succesfully" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
@@ -221,7 +211,6 @@ defmodule PlayerTest do
   end
 
   test "second player cant attack before first" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
@@ -251,7 +240,6 @@ defmodule PlayerTest do
   end
 
   test "first player cant attack twice" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
@@ -288,7 +276,6 @@ defmodule PlayerTest do
   end
 
   test "attack two players twice" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
@@ -344,7 +331,6 @@ defmodule PlayerTest do
   end
 
   test "move error" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_6.txt", 4)
@@ -359,7 +345,6 @@ defmodule PlayerTest do
   end
 
   test "attack error" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
     world = World.start_link("./data/tests/player_test_3.txt", 4)
@@ -377,7 +362,6 @@ defmodule PlayerTest do
   end
 
   test "attack turn error" do
-    Logger.configure(level: :none)
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)

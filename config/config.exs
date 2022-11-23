@@ -8,6 +8,15 @@
 # configurations or dependencies per app, it is best to
 # move said applications out of the umbrella.
 import Config
+config :logger, :console,
+  level: (
+    case Mix.env() do 
+      :dev -> :debug 
+      :test -> :none 
+      :prod -> :info 
+    end),
+  format: "$date $time [$level] $metadata$message\n",
+  metadata: [:user_id]
 
 # Sample configuration:
 #
