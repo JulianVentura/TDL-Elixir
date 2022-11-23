@@ -167,6 +167,7 @@ defmodule Room do
 
         new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
+        _broadcast_game_state(true, nil, new_state.players, new_state.enemies, new_state.world)
         new_state
       else
         state
