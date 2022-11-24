@@ -108,39 +108,44 @@ defmodule Room do
       monitor: monitor
     } = state
 
-    new_state = if type == "exit" do
-      Player.win(player)
-      World.remove_player(world, player)
-      state
-    else
-      turn_order =
-        Map.put(
-          turn_order,
-          player,
-          turn == :player and Enum.empty?(players)
-        )
+    new_state =
+      if type == "exit" do
+        Player.win(player)
+        World.remove_player(world, player)
+        state
+      else
+        turn_order =
+          Map.put(
+            turn_order,
+            player,
+            turn == :player and Enum.empty?(players)
+          )
 
-      players = players ++ [player]
-      monitor = Monitor.monitor(monitor, player)
-      Player.set_room(player, room)
+        players = players ++ [player]
+        monitor = Monitor.monitor(monitor, player)
+        Player.set_room(player, room)
 
-      {player_turn, _} =
-        turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first() ||
-          {nil, nil}
+        {player_turn, _} =
+          turn_order
+          |> Map.to_list()
+          |> Enum.filter(fn {_player, turn} -> turn end)
+          |> List.first() ||
+            {nil, nil}
 
-      _broadcast_game_state(true, player_turn, players, enemies, world)
+        _broadcast_game_state(true, player_turn, players, enemies, world)
 
-      if type == "safe" do
-        Player.heal(player)
+        if type == "safe" do
+          Player.heal(player)
+        end
+
+        %State{
+          state
+          | turn_order: turn_order,
+            players: players,
+            monitor: monitor
+        }
       end
 
-      %State{
-         state
-         | turn_order: turn_order,
-           players: players,
-           monitor: monitor
-       }
-    end
     {:reply, :ok, new_state}
   end
 
@@ -212,7 +217,7 @@ defmodule Room do
 
   @impl true
   def handle_cast({:change_turn, attacker, attackees, defendees, turn}, state) do
-    new_state = _change_turn(attacker, attackees, defendees, turn, state)
+    new_state = _change_turn(attacker, attackees, defendees, turn, state, false)
     {:noreply, new_state}
   end
 
@@ -236,14 +241,11 @@ defmodule Room do
     {pid, monitor} = Monitor.delete_by_ref(monitor, ref)
 
     Logger.info("Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(pid)}")
-    
+
     if pid in players do
       World.remove_player(world, pid)
     end
 
-    enemies = List.delete(enemies, pid)
-    players = List.delete(players, pid)
-    
     new_state =
       if (pid in players or pid in enemies) and turn_order[pid] do
         _change_turn(
@@ -255,13 +257,16 @@ defmodule Room do
           else
             :player
           end,
-          state
+          state,
+          true
         )
       else
         state
       end
-    
+
     turn_order = Map.delete(new_state.turn_order, pid)
+    enemies = List.delete(enemies, pid)
+    players = List.delete(players, pid)
 
     {player_turn, _} =
       turn_order
@@ -374,7 +379,7 @@ defmodule Room do
     end
   end
 
-  def _change_turn(attacker, attackees, defendees, turn, state) do
+  def _change_turn(attacker, attackees, defendees, turn, state, is_dead) do
     %{
       turn_order: turn_order
     } = state
@@ -422,7 +427,11 @@ defmodule Room do
 
             :enemie ->
               _broadcast_game_state(
-                true,
+                if is_dead do
+                  attacker
+                else
+                  true
+                end,
                 next_attacker,
                 attackees,
                 defendees,
@@ -453,7 +462,16 @@ defmodule Room do
     Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
   end
 
-  def _broadcast_game_state(_, _, _, _, _), do: :ok
+  def _broadcast_game_state(dead_player, turn, players, enemies, world) do
+    new_state = %{
+      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
+      players: players -- [dead_player],
+      rooms: World.get_neighbours(world, self()),
+      turn: turn
+    }
+
+    Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
+  end
 
   def _remove_enemie(enemie, state) do
     %{
