@@ -36,7 +36,13 @@ defmodule GameMaker do
   def set_new_game(worlds, name_service, cli_addr) do
       
       spawn_if_necessary = fn 
-        [] -> [World.start_link("./data/world_0.txt", 4)]  
+        [] -> 
+          child_specs = %{
+            id: World,
+            start: {World, :start_link, ["./data/world_0.txt", 4]}
+          }
+          {:ok, world} = DynamicSupervisor.start_child(WorldSupervisor, child_specs)
+          [world]  
         v -> v
       end
 
@@ -58,7 +64,12 @@ defmodule GameMaker do
 
       selected_world = List.first not_full
 
-      {:ok, cpid} = ClientProxy.start_link(selected_world, cli_addr)
+      child_specs = %{
+        id: ClientProxy,
+        start: {ClientProxy, :start_link, [selected_world, cli_addr]}
+      }
+      
+      {:ok, cpid} = DynamicSupervisor.start_child(ClientProxySupervisor, child_specs)
 
       {:ok, name} = NameService.register_process(name_service, cpid)
 

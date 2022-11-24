@@ -1,5 +1,5 @@
 defmodule ClientProxy do
-  use GenServer
+  use GenServer, restart: :temporary
   require Logger
 
   # Client API
