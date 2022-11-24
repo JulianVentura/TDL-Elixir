@@ -30,7 +30,7 @@ defmodule EnemyCreator do
       "outskirts" -> _create_enemies(room, amount, "Bandido", 10, 20, [:rock, :paper, :scissors])
       "trap" -> _create_enemies(room, amount, "Automata", 15, 25, [:rock, :paper, :scissors])
       "tomb" -> _create_enemies(room, amount, "Renacido", 30, 50, [:rock, :paper, :scissors])
-      "boss" -> _create_enemies(room, amount, "Vges-Gis", 200, 300, [:rock, :paper, :scissors])
+      "boss" -> _create_enemies(room, amount, "Vges-Gis", 50, 80, [:rock, :paper, :scissors])
       "test" -> _create_enemies(room, amount, "Test", 1, 1, [:rock])
       _ -> _create_enemies(room, amount, "Goblin", 10, 20, [:rock, :paper, :scissors])
     end
