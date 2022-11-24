@@ -135,13 +135,8 @@ defmodule World do
     Logger.info("World: Adding player #{inspect(player)}")
 
     %{
-      room_state: room_state,
-      iroom: iroom,
       players: players
     } = state
-
-    [iroom_pid | _] = Map.get(room_state, iroom)
-    Room.add_player(iroom_pid, player)
 
     new_state = %{state | players: players + 1}
 

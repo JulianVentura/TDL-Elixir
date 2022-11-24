@@ -28,6 +28,7 @@ defmodule ClientProxy do
     player = Player.start_link(name, 100, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
+    World.add_player(world, player)
     ref = Process.monitor(cli_addr)
 
     {:ok, %{client: cli_addr, client_ref: ref, player: player, name_to_pid: %{}}}
