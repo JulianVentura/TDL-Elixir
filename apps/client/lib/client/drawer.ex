@@ -1,19 +1,33 @@
 defmodule Drawer do
   def draw(game_state, arg) do
-    IEx.Helpers.clear
-    IO.puts("\n--- ESTADO DEL JUEGO ---\n")
-    IO.inspect(game_state)
+    IEx.Helpers.flush()
+    IEx.Helpers.clear()
+    lines = "\n--- ESTADO DEL JUEGO ---\n" <> inspect(game_state)
 
-    case arg do
-      {"cmd", command} ->
-        IO.puts("\n---- ULTIMO COMANDO ----\n")
-        IO.puts(command)
-      {"err", error} ->
-        IO.puts("\n---- ERROR ----\n")
-        IO.puts(error)
-      _ -> ""
-    end
+    lines =
+      lines <>
+        case arg do
+          {"cmd", command} ->
+            "\n---- ULTIMO COMANDO ----\n" <> inspect(command)
 
-    IO.puts("\n------------------------\n")
+          {"err", error} ->
+            "\n---- ERROR ----\n" <> inspect(error)
+
+          _ ->
+            ""
+        end <> "\n------------------------\n" <> _helper_text()
+
+    IO.puts(lines)
+  end
+
+  defp _helper_text() do
+    """
+    \nComandos:
+      attack <enemy>
+      move <direction>
+      exit
+
+    Ingresa un comando:
+    """
   end
 end

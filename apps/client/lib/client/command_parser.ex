@@ -15,7 +15,7 @@ defmodule CommandParser do
 
   def run() do
     command =
-      IO.gets(_helper_text())
+      IO.gets("")
       |> String.trim()
       |> String.split(" ")
 
