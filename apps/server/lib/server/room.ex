@@ -444,6 +444,8 @@ defmodule Room do
       turn_order: turn_order
     } = state
 
+    _broadcast_game_state(true, nil, players, state.enemies, state.world)
+
     %State{
       state
       | turn_order: Map.delete(turn_order, player),

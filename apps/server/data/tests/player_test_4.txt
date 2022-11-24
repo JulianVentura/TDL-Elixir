@@ -1,2 +1,2 @@
-B,2,test,A
+B,3,test,A
 A,0,start,B

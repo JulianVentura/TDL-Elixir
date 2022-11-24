@@ -126,7 +126,7 @@ defmodule IntegrationTest do
   test "move succesfully" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_4.txt", 4)
+    world = World.start_link("./data/tests/player_test_3.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -377,5 +377,42 @@ defmodule IntegrationTest do
     {error, msg} = Player.attack(player2, List.first(enemies))
     assert error
     assert msg == "Its not your turn"
+  end
+
+  test "player death" do
+    client = ClientProxyMock.start_link()
+    player = Player.start_link("Jugador", 1, :rock, client)
+    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player)
+    Player.move(player, "B")
+    room = Player.get_room(player)
+    %{enemies: enemies} = Room.get_state(room)
+
+    Player.attack(player, List.first(enemies))
+    :timer.sleep(100)
+    %{players: players} = Room.get_state(room)
+    assert player not in players
+  end
+
+  test "two player death" do
+    client = ClientProxyMock.start_link()
+    player1 = Player.start_link("Jugador", 1, :rock, client)
+    player2 = Player.start_link("Jugador", 1, :rock, client)
+    world = World.start_link("./data/tests/player_test_4.txt", 4)
+    room_ = World.get_first_room(world)
+    Room.add_player(room_, player1)
+    Room.add_player(room_, player2)
+    Player.move(player1, "B")
+    Player.move(player2, "B")
+    room = Player.get_room(player1)
+    %{enemies: enemies} = Room.get_state(room)
+
+    Player.attack(player1, List.first(enemies))
+    %{enemies: enemies2} = Room.get_state(room)
+    Player.attack(player2, List.first(enemies2))
+    :timer.sleep(100)
+    %{players: players} = Room.get_state(room)
+    assert player1 not in players or player2 not in players
   end
 end
