@@ -78,8 +78,8 @@ defmodule ServerProxy do
 
   @impl true
   def handle_cast({:receive_state, received_state}, {client_proxy, _}) do
-    Logger.debug("Receive state")
-    Logger.debug(inspect received_state)
+    #Logger.debug("Receive state")
+    #Logger.debug(inspect received_state)
     Drawer.draw(received_state, nil)
 
     {:noreply, {client_proxy, received_state}}

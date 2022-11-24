@@ -2,7 +2,7 @@ defmodule Room do
   require Logger
 
   defmodule State do
-    defstruct [:world, :enemies, :players, :turn, :turn_order, :type, :ref_to_pid]
+    defstruct [:world, :enemies, :players, :turn, :turn_order, :type, :monitor]
 
     @type t() :: %__MODULE__{
             world: World.t(),
@@ -11,7 +11,7 @@ defmodule Room do
             turn: atom | nil,
             turn_order: map | nil,
             type: String.t(),
-            ref_to_pid: map
+            monitor: any
           }
   end
 
@@ -67,9 +67,13 @@ defmodule Room do
     room = self()
     enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
     turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
+    monitor = Monitor.create()
 
-    ref_to_pid =
-      enemies |> Enum.map(fn enemie -> {Process.monitor(enemie), enemie} end) |> Map.new()
+    # Add enemies to monitor
+    monitor =
+      Enum.reduce(enemies, monitor, fn
+        enem, mon -> Monitor.monitor(mon, enem)
+      end)
 
     initial_state = %State{
       world: world,
@@ -78,7 +82,7 @@ defmodule Room do
       turn: :player,
       turn_order: turn_order,
       type: type,
-      ref_to_pid: ref_to_pid
+      monitor: monitor
     }
 
     {:ok, initial_state}
@@ -101,7 +105,7 @@ defmodule Room do
       turn_order: turn_order,
       turn: turn,
       type: type,
-      ref_to_pid: ref_to_pid
+      monitor: monitor
     } = state
 
     turn_order =
@@ -112,7 +116,7 @@ defmodule Room do
       )
 
     players = players ++ [player]
-    ref_to_pid = _monitor(ref_to_pid, player)
+    monitor = Monitor.monitor(monitor, player)
     Player.set_room(player, room)
 
     {player_turn, _} =
@@ -132,13 +136,17 @@ defmodule Room do
     end
 
     {:reply, :ok,
-     %State{state | turn_order: turn_order, players: players, ref_to_pid: ref_to_pid}}
+     %State{
+       state
+       | turn_order: turn_order,
+         players: players,
+         monitor: monitor
+     }}
   end
 
   @impl true
   def handle_call({:add_enemie, enemie}, _from, state) do
     %{
-      players: _players,
       enemies: enemies,
       turn_order: turn_order,
       turn: turn
@@ -217,17 +225,17 @@ defmodule Room do
   @impl true
   def handle_info({:DOWN, ref, _, _, _}, state) do
     %{
-      ref_to_pid: ref_to_pid,
+      monitor: monitor,
       players: players,
       enemies: enemies,
       turn: turn
     } = state
 
-    Logger.info(
-      "Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(ref_to_pid[ref])}"
-    )
+    {pid, monitor} = Monitor.delete_by_ref(monitor, ref)
 
-    {pid, ref_to_pid} = Map.pop(ref_to_pid, ref)
+    Logger.info(
+      "Room #{inspect(self())}: DOWN message received, player/enemie #{inspect pid}"
+    )
 
     new_state =
       if pid in players or pid in enemies do
@@ -242,10 +250,10 @@ defmodule Room do
 
     new_state2 = %{
       new_state
-      | ref_to_pid: ref_to_pid,
-        players: players,
+      | players: players,
         enemies: enemies,
-        turn_order: turn_order
+        turn_order: turn_order,
+        monitor: monitor
     }
 
     {:noreply, new_state2}
@@ -441,18 +449,17 @@ defmodule Room do
   def _remove_player(player, state) do
     %{
       players: players,
-      turn_order: turn_order
+      turn_order: turn_order,
+      monitor: monitor
     } = state
+    
+    monitor = Monitor.demonitor(monitor, player) 
 
     %State{
       state
       | turn_order: Map.delete(turn_order, player),
-        players: List.delete(players, player)
+        players: List.delete(players, player),
+        monitor: monitor
     }
-  end
-
-  def _monitor(ref_to_pid, pid) do
-    ref = Process.monitor(pid)
-    Map.put(ref_to_pid, ref, pid)
   end
 end
