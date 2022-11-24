@@ -20,13 +20,13 @@ defmodule Drawer do
     """
     \n--- ESTADO DEL JUEGO ---
     \nEnemigos:
-    #{Enum.map(state.enemies, fn e -> "#{e.id} #{e.health}" end)}
+    #{Enum.map(state.enemies, fn e -> "#{e.id} #{e.health} " end)}
     \nJugadores:
-    #{Enum.map(state.players, fn p -> "#{p.id} #{p.health}" end)}
+    #{Enum.map(state.players, fn p -> "#{p.id} #{p.health} " end)}
     \nTurno:
     #{state.turn}
     \nDestinos:
-    #{Enum.map(state.rooms, fn r -> "#{r}" end)}
+    #{Enum.map(state.rooms, fn r -> "#{r} " end)}
     \nJugador:
     #{state.player.id} #{state.player.health}
     \nComandos:

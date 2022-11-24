@@ -24,11 +24,13 @@ defmodule ServerProxy do
 
   @impl true
   def init(server_name) do
-    Logger.info("Connecting to GameMaker on #{inspect server_name}")
-    {client_proxy_name, node_address} = IGameMaker.new_game({ GameMaker, server_name }, {ServerProxy, node()}) # TODO: ver
+    Logger.info("Connecting to GameMaker on #{server_name}")
+    # TODO: ver
+    {client_proxy_name, node_address} =
+      IGameMaker.new_game({GameMaker, server_name}, {ServerProxy, node()})
 
     if Node.connect(node_address) do
-      Logger.info("Connecting to ClientProxy on #{inspect node_address}")
+      Logger.info("Connecting to ClientProxy on #{node_address}")
       client_proxy = {client_proxy_name, node_address}
       Logger.info("Connection established")
 
@@ -39,9 +41,10 @@ defmodule ServerProxy do
     else
       reason = """
         No se pudo conectar al ClientProxy.
-        node_address: #{inspect node_address}
-        client_proxy_name:#{inspect client_proxy_name}
+        node_address: #{node_address}
+        client_proxy_name:#{client_proxy_name}
       """
+
       Logger.error(reason)
 
       {:stop, reason}
@@ -50,10 +53,10 @@ defmodule ServerProxy do
 
   @impl true
   def handle_call({:attack, enemy}, _from, {client_proxy, state}) do
-    enemy_exists = Enum.any?(state[:enemies], fn(e) -> e.id == enemy end)
+    enemy_exists = Enum.any?(state[:enemies], fn e -> e.id == enemy end)
 
     if enemy_exists do
-      Drawer.draw(state, {"command", "Atacaste a #{ inspect enemy}"})
+      Drawer.draw(state, {"command", "Atacaste a #{enemy}"})
       IClientProxy.attack(client_proxy, enemy)
       {:reply, :ok, {client_proxy, state}}
     else
@@ -65,7 +68,7 @@ defmodule ServerProxy do
   @impl true
   def handle_call({:move, room}, _from, {client_proxy, state}) do
     if room in state[:rooms] do
-      Drawer.draw(state, {"command", "Te moviste a #{inspect room}"})
+      Drawer.draw(state, {"command", "Te moviste a #{room}"})
       IClientProxy.move(client_proxy, room)
       {:reply, :ok, {client_proxy, state}}
     else
@@ -78,8 +81,8 @@ defmodule ServerProxy do
 
   @impl true
   def handle_cast({:receive_state, received_state}, {client_proxy, _}) do
-    #Logger.debug("Receive state")
-    #Logger.debug(inspect received_state)
+    # Logger.debug("Receive state")
+    # Logger.debug(inspect received_state)
     Drawer.draw(received_state, nil)
 
     {:noreply, {client_proxy, received_state}}
