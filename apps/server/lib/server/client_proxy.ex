@@ -28,8 +28,9 @@ defmodule ClientProxy do
     player = Player.start_link("Jugador", 100, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
+    ref = Process.monitor(cli_addr)
 
-    {:ok, %{client: cli_addr, player: player, name_to_pid: %{}}}
+    {:ok, %{client: cli_addr, client_ref: ref, player: player, name_to_pid: %{}}}
   end
 
   @impl true
@@ -92,6 +93,15 @@ defmodule ClientProxy do
     new_state = %{state | name_to_pid: name_to_pid}
 
     {:noreply, new_state}
+  end
+  
+  @impl true
+  def handle_info({:DOWN, ref, _, _, _}, state) do
+    if ref == state.client_ref do 
+      Process.exit(self(), :kill)
+    end
+
+    {:noreply, state}
   end
 
   defp _update_state(players, enemies) do

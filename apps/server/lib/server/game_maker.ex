@@ -39,7 +39,9 @@ defmodule GameMaker do
         [] -> 
           child_specs = %{
             id: World,
-            start: {World, :start_link, ["./data/world_0.txt", 4]}
+            start: {World, :start_link, ["./data/world_0.txt", 4]},
+            restart: :temporary,
+            type: :worker
           }
           {:ok, world} = DynamicSupervisor.start_child(WorldSupervisor, child_specs)
           [world]  
@@ -66,7 +68,9 @@ defmodule GameMaker do
 
       child_specs = %{
         id: ClientProxy,
-        start: {ClientProxy, :start_link, [selected_world, cli_addr]}
+        start: {ClientProxy, :start_link, [selected_world, cli_addr]},
+        restart: :temporary,
+        type: :worker
       }
       
       {:ok, cpid} = DynamicSupervisor.start_child(ClientProxySupervisor, child_specs)

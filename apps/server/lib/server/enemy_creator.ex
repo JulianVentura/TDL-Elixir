@@ -1,5 +1,6 @@
 defmodule EnemyCreator do
   require Enemie
+  require Logger
 
   defp _create_enemies(room, amount, base_name, min_health, max_health, stances) do
     if amount > 0 do
@@ -7,7 +8,17 @@ defmodule EnemyCreator do
         name = base_name <> Integer.to_string(i)
         health = Enum.random(min_health..max_health)
         stance = Enum.random(stances)
-        Enemie.start_link(name, health, stance, room)
+        
+        child_specs = %{
+          id: Enemie,
+          start: {Enemie, :start_link, [name, health, stance, room]},
+          restart: :temporary,
+          type: :worker
+        }
+        
+        {:ok, pid} = DynamicSupervisor.start_child(EnemySupervisor, child_specs)
+        Logger.debug("Spawned enemy #{name} with pid #{inspect pid}")
+        pid
       end
     else
       []
