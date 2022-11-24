@@ -1,6 +1,5 @@
 defmodule Drawer do
   def draw(game_state, arg) do
-    IEx.Helpers.flush()
     IEx.Helpers.clear()
     IO.puts(_draw_state(game_state))
   end
