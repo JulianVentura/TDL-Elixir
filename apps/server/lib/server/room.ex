@@ -228,17 +228,16 @@ defmodule Room do
       monitor: monitor,
       players: players,
       enemies: enemies,
+      turn_order: turn_order,
       turn: turn
     } = state
 
     {pid, monitor} = Monitor.delete_by_ref(monitor, ref)
 
-    Logger.info(
-      "Room #{inspect(self())}: DOWN message received, player/enemie #{inspect pid}"
-    )
+    Logger.info("Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(pid)}")
 
     new_state =
-      if pid in players or pid in enemies do
+      if (pid in players or pid in enemies) and turn_order[pid] do
         _change_turn(pid, players, enemies, turn, state)
       else
         state
@@ -247,6 +246,15 @@ defmodule Room do
     turn_order = Map.delete(new_state.turn_order, pid)
     enemies = List.delete(new_state.enemies, pid)
     players = List.delete(new_state.players, pid)
+
+    {player_turn, _} =
+      turn_order
+      |> Map.to_list()
+      |> Enum.filter(fn {_player, turn} -> turn end)
+      |> List.first() ||
+        {nil, nil}
+
+    _broadcast_game_state(true, player_turn, players, enemies, state.world)
 
     new_state2 = %{
       new_state
@@ -452,8 +460,8 @@ defmodule Room do
       turn_order: turn_order,
       monitor: monitor
     } = state
-    
-    monitor = Monitor.demonitor(monitor, player) 
+
+    monitor = Monitor.demonitor(monitor, player)
 
     _broadcast_game_state(true, nil, players, state.enemies, state.world)
 
