@@ -28,7 +28,6 @@ defmodule Entity do
     {:ok, pid} =
       Agent.start_link(
         fn -> state end
-        # Name is an atom that we can use to identify the Process without its PID. This is hardcoded, should be dynamic
       )
 
     pid

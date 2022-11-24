@@ -1,13 +1,12 @@
 defmodule World do
   require Room
-  use GenServer
+  use GenServer, restart: :temporary
   require Logger
 
   # Public API
 
   def start_link(world_file_path, max_players) do
-    {_, world} = GenServer.start_link(__MODULE__, {world_file_path, max_players})
-    world
+    GenServer.start_link(__MODULE__, {world_file_path, max_players})
   end
 
   def finish(world) do

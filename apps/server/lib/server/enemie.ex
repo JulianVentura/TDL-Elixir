@@ -21,18 +21,12 @@ defmodule Enemie do
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(name, health, stance, pid) :: pid
+  @spec start_link(name, health, stance, pid) :: any
   def start_link(name, health, initial_stance, room) do
     entity = Entity.start_link(name, health, initial_stance)
     state = %State{entity: entity, room: room}
 
-    {:ok, pid} =
-      Agent.start_link(
-        fn -> state end
-        # Name is an atom that we can use to identify the Process without its PID. This is hardcoded, should be dynamic
-      )
-
-    pid
+    Agent.start_link(fn -> state end)
   end
 
   def get_state(enemie) do

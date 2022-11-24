@@ -1,5 +1,5 @@
 defmodule ClientProxy do
-  use GenServer
+  use GenServer, restart: :temporary
   require Logger
 
   # Client API
@@ -28,13 +28,15 @@ defmodule ClientProxy do
     player = Player.start_link("Jugador", 100, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
+    ref = Process.monitor(cli_addr)
 
-    {:ok, %{client: cli_addr, player: player}}
+    {:ok, %{client: cli_addr, client_ref: ref, player: player, name_to_pid: %{}}}
   end
 
   @impl true
   def handle_call({:attack, enemy}, _from, state) do
-    Player.attack(state.player, enemy)
+    pid = Map.get(state.name_to_pid, enemy)
+    Player.attack(state.player, pid)
     {:reply, :ok, state}
   end
 
@@ -54,10 +56,27 @@ defmodule ClientProxy do
     } = recv_state
     
     players = Enum.map(players, fn player -> {player, Player.get_state(player)} end)
-    s_enemies = _serialize_entities_state(enemies)
-    s_players = _serialize_entities_state(players)
-    s_player = List.first(Enum.filter(s_players, fn p_state -> p_state.id == state.player end))
+
+    name_to_pid = _update_state(players, enemies)  
     
+    s_enemies = Enum.map(enemies, &_serialize_entity/1)
+    s_players = Enum.map(players, &_serialize_entity/1) 
+    s_player = 
+      players
+        |> Enum.filter(fn {pid, _} -> pid == state.player end)
+        |> List.first
+        |> _serialize_entity
+
+    turn = 
+      case turn do
+        nil -> "No asignado"
+        _ -> 
+          Enum.concat(players, enemies) #TODO: Tiene sentido actualizar el estado si es el turno de un enemigo?
+            |> Enum.filter(fn {pid, _} -> pid == turn end)
+            |> List.first
+            |> (fn p -> elem(p, 1).name end).()
+      end
+
     send_state = %{
       turn: turn,
       player: s_player,
@@ -71,22 +90,36 @@ defmodule ClientProxy do
      
     IServerProxy.receive_state(state.client, send_state)
 
+    new_state = %{state | name_to_pid: name_to_pid}
+
+    {:noreply, new_state}
+  end
+  
+  @impl true
+  def handle_info({:DOWN, ref, _, _, _}, state) do
+    if ref == state.client_ref do 
+      Process.exit(self(), :kill)
+    end
+
     {:noreply, state}
   end
 
-  defp _serialize_entities_state(entities) do
-    serialize_state = fn entity ->
-      id = elem(entity, 0)  
-      state = elem(entity, 1)
-      
-      %{
-        id: id,
-        health: state.health,
-        stance: state.stance
-      }
-    end
-    
-    entities
-      |> Enum.map(serialize_state)
+  defp _update_state(players, enemies) do
+    Enum.concat(players, enemies)
+      |> Enum.reduce(%{}, fn 
+        (entity, name_to_pid) -> 
+          pid = elem(entity, 0)
+          name = elem(entity, 1).name
+          Map.put(name_to_pid, name, pid)
+      end) 
+  end
+
+  defp _serialize_entity(entity) do
+    state = elem(entity, 1)
+    %{
+      id: state.name,
+      health: state.health,
+      stance: state.stance
+    }
   end
 end
