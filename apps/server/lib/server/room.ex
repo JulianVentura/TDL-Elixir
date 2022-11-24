@@ -238,7 +238,17 @@ defmodule Room do
 
     new_state =
       if (pid in players or pid in enemies) and turn_order[pid] do
-        _change_turn(pid, players, enemies, turn, state)
+        _change_turn(
+          pid,
+          players,
+          enemies,
+          if turn == :player do
+            :enemie
+          else
+            :player
+          end,
+          state
+        )
       else
         state
       end
