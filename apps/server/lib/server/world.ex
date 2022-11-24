@@ -4,7 +4,7 @@ defmodule World do
   require Logger
 
   # Public API
-
+ 
   def start_link(world_file_path, max_players) do
     GenServer.start_link(__MODULE__, {world_file_path, max_players})
   end
@@ -151,8 +151,7 @@ defmodule World do
   @impl true
   def handle_call({:remove_player, player}, _from, state) do
     Logger.info("World: Removing player #{inspect(player)}")
-    new_state = %{state | players: state.players - 1}
-
+    new_state = %{state | players: state.players - 1, finished: state.players - 1 <= 0}
     {:reply, :ok, new_state}
   end
 

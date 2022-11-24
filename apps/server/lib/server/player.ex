@@ -50,9 +50,9 @@ defmodule Player do
     GenServer.cast(player, :heal)
   end
 
-  @spec finish(id) :: integer
-  def finish(player) do
-    GenServer.cast(player, :finish)
+  @spec win(id) :: integer
+  def win(player) do
+    GenServer.cast(player, :win)
   end
 
   @spec get_stance(id) :: stance
@@ -129,7 +129,8 @@ defmodule Player do
   end
 
   @impl true
-  def handle_cast(:finish, state) do
+  def handle_cast(:win, state) do
+    # Informar victoria y matar al jugador
     Logger.debug("Tesoro!")
     {:noreply, state}
   end

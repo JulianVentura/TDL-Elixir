@@ -108,40 +108,40 @@ defmodule Room do
       monitor: monitor
     } = state
 
-    turn_order =
-      Map.put(
-        turn_order,
-        player,
-        turn == :player and Enum.empty?(players)
-      )
-
-    players = players ++ [player]
-    monitor = Monitor.monitor(monitor, player)
-    Player.set_room(player, room)
-
-    {player_turn, _} =
-      turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first() ||
-        {nil, nil}
-
-    _broadcast_game_state(true, player_turn, players, enemies, world)
-
-    if type == "safe" do
-      Player.heal(player)
+    new_state = if type == "exit" do
+      Player.win(player)
+      World.remove_player(world, player)
+      state
     else
-      if type == "exit" do
-        Player.finish(player)
-        # TODO: Revisar esto
-        World.finish(world)
-      end
-    end
+      turn_order =
+        Map.put(
+          turn_order,
+          player,
+          turn == :player and Enum.empty?(players)
+        )
 
-    {:reply, :ok,
-     %State{
-       state
-       | turn_order: turn_order,
-         players: players,
-         monitor: monitor
-     }}
+      players = players ++ [player]
+      monitor = Monitor.monitor(monitor, player)
+      Player.set_room(player, room)
+
+      {player_turn, _} =
+        turn_order |> Map.to_list() |> Enum.filter(fn {_player, turn} -> turn end) |> List.first() ||
+          {nil, nil}
+
+      _broadcast_game_state(true, player_turn, players, enemies, world)
+
+      if type == "safe" do
+        Player.heal(player)
+      end
+
+      %State{
+         state
+         | turn_order: turn_order,
+           players: players,
+           monitor: monitor
+       }
+    end
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -225,6 +225,7 @@ defmodule Room do
   @impl true
   def handle_info({:DOWN, ref, _, _, _}, state) do
     %{
+      world: world,
       monitor: monitor,
       players: players,
       enemies: enemies,
@@ -252,6 +253,10 @@ defmodule Room do
       else
         state
       end
+
+    if pid in players do
+      World.remove_player(world, pid)
+    end
 
     turn_order = Map.delete(new_state.turn_order, pid)
     enemies = List.delete(new_state.enemies, pid)
