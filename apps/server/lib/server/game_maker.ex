@@ -16,24 +16,23 @@ defmodule GameMaker do
   @impl true
   def init(:ok) do
     max_clients = 20
-    name_len = 24
     Logger.info("Starting GameMaker with #{max_clients} client capacity")
-    {:ok, name_service} = NameService.start_link(max_clients, name_len)
-    {:ok, {[], name_service}}
+    {:ok, _} = ClientProxyMaker.start_link(max_clients)
+    {:ok, []}
   end
 
   @impl true
-  def handle_call({:new_game, cli_addr}, _from, {worlds, name_service}) do
+  def handle_call({:new_game, cli_addr}, _from, worlds) do
       {result, new_state} = 
-        case NameService.full?(name_service) do
-          true -> {:error, {worlds, name_service}} # TODO: Here we should redirect the client to another machine or something like that
-          false -> set_new_game(worlds, name_service, cli_addr) 
+        case ClientProxyMaker.full?(ClientProxyMaker) do
+          true -> {:error, worlds} # TODO: Here we should redirect the client to another machine or something like that
+          false -> set_new_game(worlds, cli_addr) 
         end
 
       {:reply, result, new_state}
   end
 
-  def set_new_game(worlds, name_service, cli_addr) do
+  def set_new_game(worlds, cli_addr) do
       
       spawn_if_necessary = fn 
         [] -> 
@@ -66,20 +65,11 @@ defmodule GameMaker do
 
       selected_world = List.first not_full
 
-      child_specs = %{
-        id: ClientProxy,
-        start: {ClientProxy, :start_link, [selected_world, cli_addr]},
-        restart: :temporary,
-        type: :worker
-      }
-      
-      {:ok, cpid} = DynamicSupervisor.start_child(ClientProxySupervisor, child_specs)
-
-      {:ok, name} = NameService.register_process(name_service, cpid)
+      {:ok, name} = ClientProxyMaker.new(ClientProxyMaker, selected_world, cli_addr)
 
       new_worlds = Enum.concat(full, not_full)
 
-      {{name, node()}, {new_worlds, name_service}}
+      {{name, node()}, new_worlds}
     end
   
   @impl true

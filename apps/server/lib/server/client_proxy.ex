@@ -4,8 +4,8 @@ defmodule ClientProxy do
 
   # Client API
 
-  def start_link(world, cli_addr, opts \\ []) do
-    GenServer.start_link(__MODULE__, {world, cli_addr}, opts)
+  def start_link(name, world, cli_addr, opts \\ []) do
+    GenServer.start_link(__MODULE__, {name, world, cli_addr}, opts)
   end
 
   def attack(pid, enemy) do
@@ -23,9 +23,9 @@ defmodule ClientProxy do
   # GenServer API
 
   @impl true
-  def init({world, cli_addr}) do
-    Logger.info("Starting ClientProxy")
-    player = Player.start_link("Jugador", 100, :paper, self())
+  def init({name, world, cli_addr}) do
+    Logger.info("Starting ClientProxy with name #{name}")
+    player = Player.start_link(name, 100, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
     ref = Process.monitor(cli_addr)
