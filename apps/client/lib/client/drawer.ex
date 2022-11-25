@@ -40,6 +40,10 @@ defmodule Drawer do
       """
   end
 
+  def draw_msg(msg) do
+    IO.puts(msg)
+  end
+
   defp format_enemy(enemy) do
     IO.ANSI.format([:red, :bright, enemy])
   end

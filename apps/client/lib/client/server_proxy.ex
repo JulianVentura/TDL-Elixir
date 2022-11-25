@@ -20,6 +20,10 @@ defmodule ServerProxy do
     GenServer.call(pid, {:receive_state, state})
   end
 
+  def disconnect(pid, reason) do
+    GenServer.call(pid, {:disconnect, reason})
+  end
+
   # GenServer API
 
   @impl true
@@ -86,5 +90,19 @@ defmodule ServerProxy do
     Drawer.draw(received_state, nil)
 
     {:noreply, {client_proxy, received_state}}
+  end
+
+  @impl true
+  def handle_cast({:disconnect, reason}, {client_proxy, state}) do
+    msg = case reason do
+      :win -> "V I C T O R I A\nEl elixir de la vida brilla en tus mano!"
+      :lose -> "D E R R O T A\nTal vez lo logres en tu próxima vida"
+      :internal_error -> "Error: Ha ocurrido un error interno"
+      :server_disconnected -> "Error: Server disconnected"
+      _ ->  "Error: Unknown"
+    end
+    Drawer.draw_msg(msg)
+    
+    {:noreply, {client_proxy, state}}
   end
 end
