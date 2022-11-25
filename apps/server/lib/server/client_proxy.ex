@@ -20,6 +20,10 @@ defmodule ClientProxy do
     GenServer.cast(pid, {:receive_state, state})
   end
 
+  def disconnect(pid, reason) do
+    GenServer.cast(pid, {:disconnect, reason})
+  end
+
   # GenServer API
 
   @impl true
@@ -95,7 +99,13 @@ defmodule ClientProxy do
 
     {:noreply, new_state}
   end
-  
+
+  @impl true
+  def handle_cast({:disconnect, reason}, state) do
+    IServerProxy.disconnect(state.client, reason)
+    {:noreply, state}
+  end
+
   @impl true
   def handle_info({:DOWN, ref, _, _, _}, state) do
     if ref == state.client_ref do 

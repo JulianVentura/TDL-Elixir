@@ -50,11 +50,6 @@ defmodule Player do
     GenServer.cast(player, :heal)
   end
 
-  @spec win(id) :: integer
-  def win(player) do
-    GenServer.cast(player, :win)
-  end
-
   @spec get_stance(id) :: stance
   def get_stance(player) do
     GenServer.call(player, :get_stance)
@@ -78,6 +73,11 @@ defmodule Player do
     GenServer.cast(player, {:receive_state, state_received})
   end
 
+  @spec disconnect(id, atom) :: integer
+  def disconnect(player, reason) do
+    GenServer.cast(player, {:disconnect, reason})
+  end
+
   @impl true
   def init({name, health, initial_stance, client}) do
     entity = Entity.start_link(name, health, initial_stance)
@@ -95,6 +95,12 @@ defmodule Player do
   @impl true
   def handle_call(:get_room, _from, state) do
     {:reply, state.room, state}
+  end
+
+  @impl true
+  def handle_cast({:disconnect, reason}, state) do
+    ClientProxy.disconnect(state.client, reason)
+    {:noreply, state}
   end
 
   @impl true
@@ -125,13 +131,6 @@ defmodule Player do
   @impl true
   def handle_cast(:heal, state) do
     Entity.heal(state.entity)
-    {:noreply, state}
-  end
-
-  @impl true
-  def handle_cast(:win, state) do
-    # Informar victoria y matar al jugador
-    Logger.debug("Tesoro!")
     {:noreply, state}
   end
 

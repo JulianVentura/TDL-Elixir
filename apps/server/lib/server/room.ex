@@ -104,7 +104,7 @@ defmodule Room do
 
     new_state =
       if type == "exit" do
-        Player.win(player)
+        Player.disconnect(player, :win)
         World.remove_player(world, player)
         state
       else
