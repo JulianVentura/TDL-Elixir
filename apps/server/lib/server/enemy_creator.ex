@@ -12,7 +12,7 @@ defmodule EnemyCreator do
         child_specs = %{
           id: Enemie,
           start: {Enemie, :start_link, [name, health, stance, room]},
-          restart: :temporary,
+          restart: :transient,
           type: :worker
         }
         

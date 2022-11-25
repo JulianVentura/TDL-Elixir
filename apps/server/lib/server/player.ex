@@ -73,9 +73,16 @@ defmodule Player do
     GenServer.cast(player, {:receive_state, state_received})
   end
 
-  @spec disconnect(id, atom) :: integer
-  def disconnect(player, reason) do
-    GenServer.cast(player, {:disconnect, reason})
+  def kill(player) do
+    GenServer.cast(player, :kill)
+  end
+  
+  def win(player) do
+    GenServer.cast(player, :win)
+  end
+  
+  def stop(player) do
+    GenServer.cast(player, :stop)
   end
 
   @impl true
@@ -96,23 +103,18 @@ defmodule Player do
   def handle_call(:get_room, _from, state) do
     {:reply, state.room, state}
   end
-
+  
   @impl true
-  def handle_cast({:disconnect, reason}, state) do
-    ClientProxy.disconnect(state.client, reason)
-    {:noreply, state}
+  def handle_call(:get_stance, _from, state) do
+    {:reply, Entity.get_state(state.entity).stance, state}
   end
-
+  
   @impl true
   def handle_call({:be_attacked, amount, other_stance}, _from, state) do
     health = Entity.attack(state.entity, amount, other_stance)
     {:reply, health, state}
   end
 
-  @impl true
-  def handle_call(:get_stance, _from, state) do
-    {:reply, Entity.get_state(state.entity).stance, state}
-  end
 
   @impl true
   def handle_call({:attack, player, enemie}, _from, state) do
@@ -126,6 +128,25 @@ defmodule Player do
   def handle_call({:move, player, direction}, _from, state) do
     res = Room.move(state.room, player, direction)
     {:reply, res, state}
+  end
+
+  @impl true
+  def handle_cast(:kill, state) do
+    ClientProxy.disconnect(state.client, :win)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:win, state) do
+    ClientProxy.disconnect(state.client, :win)
+    {:noreply, state}
+  end
+  
+  @impl true
+  def handle_cast(:stop, state) do
+    Entity.stop(state.entity)
+    Process.exit(self(), :normal)
+    {:noreply, state}
   end
 
   @impl true

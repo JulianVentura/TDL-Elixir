@@ -104,7 +104,7 @@ defmodule Room do
 
     new_state =
       if type == "exit" do
-        Player.disconnect(player, :win)
+        Player.win(player)
         World.remove_player(world, player)
         state
       else
@@ -222,9 +222,9 @@ defmodule Room do
     {_error, new_state} = _attack_handler(attacker, defender, amount, room, state, nil)
     {:noreply, new_state}
   end
-
+  
   @impl true
-  def handle_info({:DOWN, ref, _, _, _}, state) do
+  def handle_info({:DOWN, _, :process, pid, :killed}, state) do
     %{
       world: world,
       monitor: monitor,
@@ -234,7 +234,7 @@ defmodule Room do
       turn: turn
     } = state
 
-    {pid, monitor} = Monitor.delete_by_ref(monitor, ref)
+    monitor = Monitor.demonitor(monitor, pid)
 
     Logger.info("Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(pid)}")
 
@@ -282,6 +282,15 @@ defmodule Room do
     }
 
     {:noreply, new_state2}
+  end
+  
+  @impl true
+  def handle_info({:DOWN, _, :process, pid, reason}, state) do
+    Logger.info(
+      "Process DOWN: #{inspect pid} with exit reason #{reason}"
+    ) 
+    #Do nothing
+    {:noreply, state}
   end
 
   # Private functions
@@ -369,7 +378,9 @@ defmodule Room do
         health = Player.be_attacked(player, amount, stance)
 
         case health do
-          0 -> _remove_player(player, state)
+          0 -> 
+            Player.kill(player)
+            _remove_player(player, state)
           _ -> state
         end
     end
@@ -472,15 +483,19 @@ defmodule Room do
   def _remove_enemie(enemie, state) do
     %{
       enemies: enemies,
-      turn_order: turn_order
+      turn_order: turn_order,
+      monitor: monitor
     } = state
 
     Enemie.stop(enemie)
+    
+    monitor = Monitor.demonitor(monitor, enemie)
 
     %State{
       state
       | turn_order: Map.delete(turn_order, enemie),
-        enemies: List.delete(enemies, enemie)
+        enemies: List.delete(enemies, enemie),
+        monitor: monitor
     }
   end
 
@@ -490,7 +505,7 @@ defmodule Room do
       turn_order: turn_order,
       monitor: monitor
     } = state
-
+    
     monitor = Monitor.demonitor(monitor, player)
 
     %State{

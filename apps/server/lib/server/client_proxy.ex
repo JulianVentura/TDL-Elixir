@@ -103,6 +103,8 @@ defmodule ClientProxy do
   @impl true
   def handle_cast({:disconnect, reason}, state) do
     IServerProxy.disconnect(state.client, reason)
+    Player.stop(state.player)
+    Process.exit(self(), :normal)
     {:noreply, state}
   end
 
