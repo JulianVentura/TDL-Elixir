@@ -33,6 +33,10 @@ defmodule World do
     GenServer.call(world, {:remove_player, player})
   end
 
+  def get_players_amount(world) do
+    GenServer.call(world, :get_players_amount)
+  end
+
   def get_neighbours(world, room) do
     GenServer.call(world, {:get_directions, room})
   end
@@ -148,6 +152,11 @@ defmodule World do
     Logger.info("World: Removing player #{inspect(player)}")
     new_state = %{state | players: state.players - 1, finished: state.players - 1 <= 0}
     {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_players_amount, _from, state) do
+    {:reply, state.players, state}
   end
 
   @impl true
