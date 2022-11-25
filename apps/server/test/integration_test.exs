@@ -21,7 +21,7 @@ defmodule IntegrationTest do
   test "creates succesfully" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_1.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_1.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -41,7 +41,7 @@ defmodule IntegrationTest do
   test "attack succesfully" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_2.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_2.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
     Player.move(player, "B")
@@ -65,7 +65,7 @@ defmodule IntegrationTest do
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
     Player.move(player, "B")
@@ -92,7 +92,7 @@ defmodule IntegrationTest do
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
     Player.move(player, "B")
@@ -126,7 +126,7 @@ defmodule IntegrationTest do
   test "move succesfully" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -140,7 +140,7 @@ defmodule IntegrationTest do
   test "move unsuccesfully" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_6.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -155,7 +155,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -177,7 +177,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -214,7 +214,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -243,7 +243,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -279,7 +279,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_5.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_5.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -333,7 +333,7 @@ defmodule IntegrationTest do
   test "move error" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_6.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
     {error, msg} = Player.move(player, "B")
@@ -347,7 +347,7 @@ defmodule IntegrationTest do
   test "attack error" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
 
@@ -365,7 +365,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 100, :rock, client)
     player2 = Player.start_link("Jugador", 100, :rock, client)
-    world = World.start_link("./data/tests/player_test_5.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_5.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)
@@ -382,7 +382,7 @@ defmodule IntegrationTest do
   test "player death" do
     client = ClientProxyMock.start_link()
     player = Player.start_link("Jugador", 1, :rock, client)
-    world = World.start_link("./data/tests/player_test_3.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
     Player.move(player, "B")
@@ -399,7 +399,7 @@ defmodule IntegrationTest do
     client = ClientProxyMock.start_link()
     player1 = Player.start_link("Jugador", 1, :rock, client)
     player2 = Player.start_link("Jugador", 1, :rock, client)
-    world = World.start_link("./data/tests/player_test_4.txt", 4)
+    {:ok, world} = World.start_link("./data/tests/player_test_4.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
     Room.add_player(room_, player2)

@@ -47,7 +47,7 @@ defmodule Room do
 
   @spec add_enemie(id, id) :: atom()
   def add_enemie(room, enemie) do
-    GenServer.call(room, {:add_enemie, enemie})
+    GenServer.cast(room, {:add_enemie, enemie})
   end
 
   @spec add_player(id, id) :: atom()
@@ -65,19 +65,13 @@ defmodule Room do
   def init({world, enemies_amount, type}) do
     Logger.info("Starting Room of type #{type} from world #{inspect(world)}")
     room = self()
-    enemies = EnemyCreator.create_enemies(type, room, enemies_amount)
-    turn_order = enemies |> Enum.map(fn enemie -> {enemie, false} end) |> Map.new()
+    EnemyCreator.create_enemies(type, room, enemies_amount)
+    turn_order = Map.new()
     monitor = Monitor.create()
-
-    # Add enemies to monitor
-    monitor =
-      Enum.reduce(enemies, monitor, fn
-        enem, mon -> Monitor.monitor(mon, enem)
-      end)
 
     initial_state = %State{
       world: world,
-      enemies: enemies,
+      enemies: [],
       players: [],
       turn: :player,
       turn_order: turn_order,
@@ -150,26 +144,6 @@ defmodule Room do
   end
 
   @impl true
-  def handle_call({:add_enemie, enemie}, _from, state) do
-    %{
-      enemies: enemies,
-      turn_order: turn_order,
-      turn: turn
-    } = state
-
-    enemies = enemies ++ [enemie]
-
-    turn_order =
-      Map.put(
-        turn_order,
-        enemie,
-        turn == :enemie
-      )
-
-    {:reply, :ok, %State{state | turn_order: turn_order, enemies: enemies}}
-  end
-
-  @impl true
   def handle_call({:move, player, direction, room}, _from, state) do
     %{
       world: world,
@@ -213,6 +187,28 @@ defmodule Room do
   @impl true
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  @impl true
+  def handle_cast({:add_enemie, enemie}, state) do
+    %{
+      enemies: enemies,
+      turn_order: turn_order,
+      turn: turn,
+      monitor: monitor
+    } = state
+
+    enemies = enemies ++ [enemie]
+    monitor = Monitor.monitor(monitor, enemie)
+
+    turn_order =
+      Map.put(
+        turn_order,
+        enemie,
+        turn == :enemie
+      )
+
+    {:noreply, %State{state | turn_order: turn_order, enemies: enemies, monitor: monitor}}
   end
 
   @impl true

@@ -26,7 +26,9 @@ defmodule Enemie do
     entity = Entity.start_link(name, health, initial_stance)
     state = %State{entity: entity, room: room}
 
-    Agent.start_link(fn -> state end)
+    {:ok, pid} = Agent.start_link(fn -> state end)
+    Room.add_enemie(room, pid)
+    {:ok, pid}
   end
 
   def get_state(enemie) do
