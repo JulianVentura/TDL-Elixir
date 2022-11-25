@@ -369,7 +369,7 @@ defmodule Room do
         health = Player.be_attacked(player, amount, stance)
 
         case health do
-          0 -> _remove_player(player, state)
+          0 -> r = _remove_player(player, state); Player.disconnect(player, :lose); r
           _ -> state
         end
     end

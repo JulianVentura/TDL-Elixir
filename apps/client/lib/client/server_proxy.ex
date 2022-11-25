@@ -95,14 +95,14 @@ defmodule ServerProxy do
   @impl true
   def handle_cast({:disconnect, reason}, {client_proxy, state}) do
     msg = case reason do
-      :win -> "V I C T O R I A\nEl elixir de la vida brilla en tus mano!"
-      :lose -> "D E R R O T A\nTal vez lo logres en tu próxima vida"
+      :win -> "V I C T O R I A\nEl elixir de la vida brilla en tus manos!"
+      :lose -> "D E R R O T A\nTal vez lo logres en tu próxima vida..."
       :internal_error -> "Error: Ha ocurrido un error interno"
       :server_disconnected -> "Error: Server disconnected"
       _ ->  "Error: Unknown"
     end
     Drawer.draw_msg(msg)
-    
+    System.stop(0)
     {:noreply, {client_proxy, state}}
   end
 end

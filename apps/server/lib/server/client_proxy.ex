@@ -29,7 +29,7 @@ defmodule ClientProxy do
   @impl true
   def init({name, world, cli_addr}) do
     Logger.info("Starting ClientProxy with name #{name}")
-    player = Player.start_link(name, 100, :paper, self())
+    player = Player.start_link(name, 1, :paper, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
     World.add_player(world, player)
