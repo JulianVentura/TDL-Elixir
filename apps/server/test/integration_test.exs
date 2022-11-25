@@ -11,6 +11,10 @@ defmodule ClientProxyMock do
   def handle_cast({:receive_state, _recv_state}, _state) do
     {:noreply, :ok}
   end
+  
+  def handle_cast({:disconnect, reason}, state) do
+    {:noreply, :ok}
+  end
 end
 
 defmodule IntegrationTest do

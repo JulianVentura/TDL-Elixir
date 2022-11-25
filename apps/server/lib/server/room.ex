@@ -379,8 +379,9 @@ defmodule Room do
 
         case health do
           0 -> 
+            r = _remove_player(player, state)
             Player.kill(player)
-            _remove_player(player, state)
+            r
           _ -> state
         end
     end

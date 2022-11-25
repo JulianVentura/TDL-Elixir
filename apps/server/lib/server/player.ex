@@ -132,7 +132,7 @@ defmodule Player do
 
   @impl true
   def handle_cast(:kill, state) do
-    ClientProxy.disconnect(state.client, :win)
+    ClientProxy.disconnect(state.client, :lose)
     {:noreply, state}
   end
 
