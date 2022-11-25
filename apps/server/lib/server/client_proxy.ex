@@ -1,5 +1,6 @@
 defmodule ClientProxy do
   use GenServer, restart: :temporary
+  require Dmg
   require Logger
 
   # Client API
@@ -29,7 +30,11 @@ defmodule ClientProxy do
   @impl true
   def init({name, world, cli_addr}) do
     Logger.info("Starting ClientProxy with name #{name}")
-    player = Player.start_link(name, 1, :paper, self())
+    players_amount = World.get_players_amount(world)
+    stances = Dmg.get_stances()
+    stance = Enum.at(stances, rem(players_amount,length(stances)))
+
+    player = Player.start_link(name, 100, stance, self())
     room = World.get_first_room(world)
     Room.add_player(room, player)
     World.add_player(world, player)
