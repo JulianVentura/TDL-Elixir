@@ -12,7 +12,7 @@ defmodule Drawer do
       #{if Enum.empty?(state.enemies) do
         format_enemy("No hay enemigos\n")
       else
-        format_enemy(Enum.map(state.enemies, fn e -> "#{e.id} #{e.health} #{e.stance} \n" end))
+        format_enemy(Enum.map(state.enemies, fn e -> "#{e.id} Vida: #{e.health} Tipo: #{e.stance} \n" end))
       end}
       """,
       "\n"
@@ -20,7 +20,7 @@ defmodule Drawer do
       String.trim(
         """
         #{format_player("\nJugadores:")}
-        #{format_player(Enum.map(state.players, fn p -> "#{p.id} #{p.health} #{p.stance} \n" end))}
+        #{format_player(Enum.map(state.players, fn p -> "#{p.id} Vida: #{p.health} Tipo: #{p.stance} \n" end))}
         """,
         "\n"
       ) <>
@@ -29,8 +29,8 @@ defmodule Drawer do
       #{format_turn(state.turn)}
       #{format_room("\nDestinos:")}
       #{format_room(Enum.map(state.rooms, fn r -> "#{r} " end))}
-      #{format_player("\nJugador:")}
-      #{format_player("#{state.player.id} #{state.player.health} #{state.player.stance}")}
+      #{format_player("\nTu Jugador:")}
+      #{format_player("#{state.player.id} Vida: #{state.player.health} Tipo: #{state.player.stance}")}
       \nComandos:
         attack <enemy>
         move <direction>
