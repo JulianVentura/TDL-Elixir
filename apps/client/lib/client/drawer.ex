@@ -4,40 +4,55 @@ defmodule Drawer do
     IO.puts(_draw_state(game_state))
   end
 
-  defp _helper_text() do
-    """
-    \nComandos:
-      attack <enemy>
-      move <direction>
-      exit
+  defp _draw_state(state) do
+    String.trim(
+      """
+      \n--- ESTADO DEL JUEGO ---
+      #{format_enemy("\nEnemigos:")}
+      #{if Enum.empty?(state.enemies) do
+        format_enemy("No hay enemigos\n")
+      else
+        format_enemy(Enum.map(state.enemies, fn e -> "#{e.id} #{e.health} #{e.stance} \n" end))
+      end}
+      """,
+      "\n"
+    ) <>
+      String.trim(
+        """
+        #{format_player("\nJugadores:")}
+        #{format_player(Enum.map(state.players, fn p -> "#{p.id} #{p.health} #{p.stance} \n" end))}
+        """,
+        "\n"
+      ) <>
+      """
+      #{format_turn("\nTurno:")}
+      #{format_turn(state.turn)}
+      #{format_room("\nDestinos:")}
+      #{format_room(Enum.map(state.rooms, fn r -> "#{r} " end))}
+      #{format_player("\nJugador:")}
+      #{format_player("#{state.player.id} #{state.player.health} #{state.player.stance}")}
+      \nComandos:
+        attack <enemy>
+        move <direction>
+        exit
 
-    Ingresa un comando:
-    """
+      Ingresa un comando:
+      """
   end
 
-  defp _draw_state(state) do
-    """
-    \n--- ESTADO DEL JUEGO ---
-    \nEnemigos:
-    #{if Enum.empty?(state.enemies) do
-      "No hay enemigos"
-    else
-      Enum.map(state.enemies, fn e -> "#{e.id} #{e.health} #{e.stance} " end)
-    end}
-    \nJugadores:
-    #{Enum.map(state.players, fn p -> "#{p.id} #{p.health} #{p.stance} " end)}
-    \nTurno:
-    #{state.turn}
-    \nDestinos:
-    #{Enum.map(state.rooms, fn r -> "#{r} " end)}
-    \nJugador:
-    #{state.player.id} #{state.player.health} #{state.player.stance}
-    \nComandos:
-      attack <enemy>
-      move <direction>
-      exit
+  defp format_enemy(enemy) do
+    IO.ANSI.format([:red, :bright, enemy])
+  end
 
-    Ingresa un comando:
-    """
+  defp format_player(player) do
+    IO.ANSI.format([:green, :bright, player])
+  end
+
+  defp format_turn(turn) do
+    IO.ANSI.format([:yellow, :bright, turn])
+  end
+
+  defp format_room(room) do
+    IO.ANSI.format([:blue, :bright, room])
   end
 end
