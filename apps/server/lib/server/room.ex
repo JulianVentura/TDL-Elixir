@@ -84,6 +84,7 @@ defmodule Room do
 
   @impl true
   def handle_call({:attack, attacker, defender, amount, room, stance}, _from, state) do
+    Logger.info("Room stance #{inspect(stance)}")
     {error, new_state} = _attack_handler(attacker, defender, amount, room, state, stance)
     {:reply, error, new_state}
   end
@@ -312,6 +313,8 @@ defmodule Room do
   # Private functions
 
   def _attack_handler(attacker, defender, amount, room, state, stance) do
+    Logger.info("Room attack handler #{inspect(stance)}")
+
     %{
       players: players,
       enemies: enemies
@@ -355,6 +358,8 @@ defmodule Room do
   end
 
   def _attack_player(enemie, player, amount, state, room) do
+    Logger.info("Attack Player #{inspect(Enemie.get_stance(enemie))}")
+
     %{
       turn: turn,
       turn_order: turn_order,
@@ -380,6 +385,7 @@ defmodule Room do
   end
 
   def _attack(enemie, player, direction, amount, state, stance) do
+    Logger.info("Room _attack #{inspect(stance)}")
     # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
     case direction do
       :player ->
@@ -392,6 +398,7 @@ defmodule Room do
 
       :enemie ->
         health = Player.be_attacked(player, amount, stance)
+        Logger.info("Health #{inspect(health)}")
 
         case health do
           0 ->
@@ -442,7 +449,9 @@ defmodule Room do
             state.world
           )
 
-          for enemie <- defendees do
+          if not Enum.empty?(defendees) do
+            enemie = List.first(defendees)
+
             %{player: player_to_attack, amount: amount} =
               Enemie.choose_player_to_attack(enemie, attackees)
 
@@ -459,6 +468,11 @@ defmodule Room do
             :player ->
               Logger.info("Broadcast false :player")
 
+              %{player: player_to_attack, amount: amount} =
+                Enemie.choose_player_to_attack(next_attacker, defendees)
+
+              GenServer.cast(self(), {:attack, next_attacker, player_to_attack, amount, self()})
+
               _broadcast_game_state(
                 true,
                 next_attacker,
@@ -466,6 +480,8 @@ defmodule Room do
                 attackees,
                 state.world
               )
+
+              :timer.sleep(500)
 
             :enemie ->
               Logger.info("Broadcast false :enemie")
