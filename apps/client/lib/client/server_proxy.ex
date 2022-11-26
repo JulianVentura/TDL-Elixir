@@ -29,9 +29,13 @@ defmodule ServerProxy do
   @impl true
   def init(server_name) do
     Logger.info("Connecting to GameMaker on #{server_name}")
-    # TODO: ver
-    {client_proxy_name, node_address} =
-      IGameMaker.new_game({GameMaker, server_name}, {ServerProxy, node()})
+    response = IGameMaker.new_game({GameMaker, server_name}, {ServerProxy, node()})
+
+    {client_proxy_name, node_address} = 
+      case response do
+        {:ok, v} -> v
+        :error -> finish("No se ha podido iniciar una sesión")
+      end
 
     if Node.connect(node_address) do
       Logger.info("Connecting to ClientProxy on #{node_address}")
@@ -101,8 +105,12 @@ defmodule ServerProxy do
       :server_disconnected -> "Error: Server disconnected"
       _ ->  "Error: Unknown"
     end
+    finish(msg)
+    {:noreply, {client_proxy, state}}
+  end
+
+  defp finish(msg) do
     Drawer.draw_msg(msg)
     System.stop(0)
-    {:noreply, {client_proxy, state}}
   end
 end
