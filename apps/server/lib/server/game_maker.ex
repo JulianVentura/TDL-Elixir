@@ -36,6 +36,7 @@ defmodule GameMaker do
       
       spawn_if_necessary = fn 
         [] -> 
+          Logger.info("GameMaker: Spawning a new world")
           child_specs = %{
             id: World,
             start: {World, :start_link, ["./data/world_0.txt", 4]},
@@ -44,7 +45,9 @@ defmodule GameMaker do
           }
           {:ok, world} = DynamicSupervisor.start_child(WorldSupervisor, child_specs)
           [world]  
-        v -> v
+        v -> 
+          Logger.info("GameMaker: Using an existing world")
+          v
       end
 
       full = 

@@ -193,6 +193,8 @@ defmodule Room do
   def handle_cast({:add_enemie, enemie}, state) do
     %{
       enemies: enemies,
+      players: players,
+      world: world,
       turn_order: turn_order,
       turn: turn,
       monitor: monitor
@@ -208,6 +210,21 @@ defmodule Room do
         turn == :enemie
       )
 
+    {player_turn, _} =
+      turn_order
+      |> Map.to_list()
+      |> Enum.filter(fn {_player, turn} -> turn end)
+      |> List.first() ||
+        {nil, nil}
+
+    _broadcast_game_state(
+      true,
+      player_turn,
+      players,
+      enemies,
+      world
+    )
+
     {:noreply, %State{state | turn_order: turn_order, enemies: enemies, monitor: monitor}}
   end
 
@@ -222,7 +239,7 @@ defmodule Room do
     {_error, new_state} = _attack_handler(attacker, defender, amount, room, state, nil)
     {:noreply, new_state}
   end
-  
+
   @impl true
   def handle_info({:DOWN, _, :process, pid, :killed}, state) do
     %{
@@ -283,13 +300,11 @@ defmodule Room do
 
     {:noreply, new_state2}
   end
-  
+
   @impl true
   def handle_info({:DOWN, _, :process, pid, reason}, state) do
-    Logger.info(
-      "Process DOWN: #{inspect pid} with exit reason #{reason}"
-    ) 
-    #Do nothing
+    Logger.info("Process DOWN: #{inspect(pid)} with exit reason #{reason}")
+    # Do nothing
     {:noreply, state}
   end
 
@@ -378,11 +393,14 @@ defmodule Room do
         health = Player.be_attacked(player, amount, stance)
 
         case health do
-          0 -> 
+          0 ->
             r = _remove_player(player, state)
             Player.kill(player)
+            World.remove_player(state.world, player)
             r
-          _ -> state
+
+          _ ->
+            state
         end
     end
   end
@@ -489,7 +507,7 @@ defmodule Room do
     } = state
 
     Enemie.stop(enemie)
-    
+
     monitor = Monitor.demonitor(monitor, enemie)
 
     %State{
@@ -506,7 +524,7 @@ defmodule Room do
       turn_order: turn_order,
       monitor: monitor
     } = state
-    
+
     monitor = Monitor.demonitor(monitor, player)
 
     %State{
