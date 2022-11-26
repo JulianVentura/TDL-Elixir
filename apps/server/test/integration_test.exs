@@ -8,10 +8,10 @@ defmodule ClientProxyMock do
     {:ok, :ok}
   end
 
-  def handle_cast({:receive_state, _recv_state}, _state) do
+  def handle_cast({:receive_state, _recv_state, _parse_player}, _state) do
     {:noreply, :ok}
   end
-  
+
   def handle_cast({:disconnect, reason}, state) do
     {:noreply, :ok}
   end
@@ -24,7 +24,7 @@ defmodule IntegrationTest do
 
   test "creates succesfully" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_1.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
@@ -44,7 +44,7 @@ defmodule IntegrationTest do
 
   test "attack succesfully" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_2.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
@@ -68,7 +68,7 @@ defmodule IntegrationTest do
   test "attack and receive damage" do
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
@@ -95,7 +95,7 @@ defmodule IntegrationTest do
   test "attack , receive damage and attack again" do
     # This test works with the assumption that the enemies are rock with 1 hp and attack with 10 amount, and the player attacks with 10 amount
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
@@ -129,7 +129,7 @@ defmodule IntegrationTest do
 
   test "move succesfully" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
@@ -143,7 +143,7 @@ defmodule IntegrationTest do
 
   test "move unsuccesfully" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
@@ -157,8 +157,8 @@ defmodule IntegrationTest do
 
   test "add two players succesfully" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador", 100, :fire, client)
+    player2 = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -179,8 +179,8 @@ defmodule IntegrationTest do
 
   test "attack two players succesfully" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador1", 100, :fire, client)
+    player2 = Player.start_link("Jugador2", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -205,6 +205,8 @@ defmodule IntegrationTest do
 
     assert length(enemies) == 1
 
+    IO.puts("enemies #{inspect(enemies)}")
+
     Player.attack(player2, List.first(enemies))
 
     %{
@@ -216,8 +218,8 @@ defmodule IntegrationTest do
 
   test "second player cant attack before first" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador", 100, :fire, client)
+    player2 = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -245,8 +247,8 @@ defmodule IntegrationTest do
 
   test "first player cant attack twice" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador", 100, :fire, client)
+    player2 = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -281,8 +283,8 @@ defmodule IntegrationTest do
 
   test "attack two players twice" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador", 100, :fire, client)
+    player2 = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_5.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -313,7 +315,7 @@ defmodule IntegrationTest do
       enemies: enemies
     } = Room.get_state(room1)
 
-    :timer.sleep(100)
+    :timer.sleep(1700)
     assert length(enemies) == 2
     assert Player.get_state(player1).health + Player.get_state(player2).health == 180
 
@@ -336,7 +338,7 @@ defmodule IntegrationTest do
 
   test "move error" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_6.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
@@ -350,7 +352,7 @@ defmodule IntegrationTest do
 
   test "attack error" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 100, :rock, client)
+    player = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room = World.get_first_room(world)
     Room.add_player(room, player)
@@ -360,15 +362,15 @@ defmodule IntegrationTest do
     assert msg == "Invalid Attack"
 
     %{enemies: enemies} = Room.get_state(room)
-    {error2, msg2} = Room.attack(room, "Nada", List.first(enemies), 10, :rock)
+    {error2, msg2} = Room.attack(room, "Nada", List.first(enemies), 10, :fire)
     assert error2
     assert msg2 == "Invalid Attack"
   end
 
   test "attack turn error" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 100, :rock, client)
-    player2 = Player.start_link("Jugador", 100, :rock, client)
+    player1 = Player.start_link("Jugador", 100, :fire, client)
+    player2 = Player.start_link("Jugador", 100, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_5.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
@@ -385,7 +387,7 @@ defmodule IntegrationTest do
 
   test "player death" do
     client = ClientProxyMock.start_link()
-    player = Player.start_link("Jugador", 1, :rock, client)
+    player = Player.start_link("Jugador", 1, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_3.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player)
@@ -401,8 +403,8 @@ defmodule IntegrationTest do
 
   test "two player death" do
     client = ClientProxyMock.start_link()
-    player1 = Player.start_link("Jugador", 1, :rock, client)
-    player2 = Player.start_link("Jugador", 1, :rock, client)
+    player1 = Player.start_link("Jugador", 1, :fire, client)
+    player2 = Player.start_link("Jugador", 1, :fire, client)
     {:ok, world} = World.start_link("./data/tests/player_test_4.txt", 4)
     room_ = World.get_first_room(world)
     Room.add_player(room_, player1)
