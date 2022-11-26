@@ -431,7 +431,7 @@ defmodule Room do
       case {change_turn, turn} do
         {true, :player} ->
           Logger.info("Broadcast true :player")
-          _broadcast_game_state(true, List.first(defendees), defendees, attackees, state.world)
+          _broadcast_game_state(false, List.first(defendees), defendees, attackees, state.world)
           Map.put(turn_order, List.first(defendees), true)
 
         {true, :enemie} ->
@@ -441,7 +441,7 @@ defmodule Room do
             if is_dead do
               attacker
             else
-              true
+              false
             end,
             List.first(defendees),
             attackees,
@@ -474,14 +474,12 @@ defmodule Room do
               GenServer.cast(self(), {:attack, next_attacker, player_to_attack, amount, self()})
 
               _broadcast_game_state(
-                true,
+                false,
                 next_attacker,
                 defendees,
                 attackees,
                 state.world
               )
-
-              :timer.sleep(500)
 
             :enemie ->
               Logger.info("Broadcast false :enemie")
@@ -490,7 +488,7 @@ defmodule Room do
                 if is_dead do
                   attacker
                 else
-                  true
+                  false
                 end,
                 next_attacker,
                 attackees,
@@ -521,7 +519,20 @@ defmodule Room do
       turn: turn
     }
 
-    Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
+    Enum.map(players, fn player -> Player.receive_state(player, new_state, true) end)
+  end
+
+  def _broadcast_game_state(false, turn, players, enemies, world) do
+    Logger.info("Broadcasting game state with players #{inspect(players)}")
+
+    new_state = %{
+      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
+      players: Enum.map(players, fn player -> {player, Player.get_state(player)} end),
+      rooms: World.get_neighbours(world, self()),
+      turn: turn
+    }
+
+    Enum.map(players, fn player -> Player.receive_state(player, new_state, false) end)
   end
 
   def _broadcast_game_state(dead_player, turn, players, enemies, world) do
@@ -534,7 +545,7 @@ defmodule Room do
       turn: turn
     }
 
-    Enum.map(players, fn player -> Player.receive_state(player, new_state) end)
+    Enum.map(players, fn player -> Player.receive_state(player, new_state, true) end)
   end
 
   def _remove_enemie(enemie, state) do

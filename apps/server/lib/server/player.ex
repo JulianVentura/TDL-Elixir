@@ -69,18 +69,18 @@ defmodule Player do
     GenServer.call(player, {:move, player, direction})
   end
 
-  def receive_state(player, state_received) do
-    GenServer.cast(player, {:receive_state, state_received})
+  def receive_state(player, state_received, parse_player) do
+    GenServer.cast(player, {:receive_state, state_received, parse_player})
   end
 
   def kill(player) do
     GenServer.cast(player, :kill)
   end
-  
+
   def win(player) do
     GenServer.cast(player, :win)
   end
-  
+
   def stop(player) do
     GenServer.cast(player, :stop)
   end
@@ -103,18 +103,17 @@ defmodule Player do
   def handle_call(:get_room, _from, state) do
     {:reply, state.room, state}
   end
-  
+
   @impl true
   def handle_call(:get_stance, _from, state) do
     {:reply, Entity.get_state(state.entity).stance, state}
   end
-  
+
   @impl true
   def handle_call({:be_attacked, amount, other_stance}, _from, state) do
     health = Entity.attack(state.entity, amount, other_stance)
     {:reply, health, state}
   end
-
 
   @impl true
   def handle_call({:attack, player, enemie}, _from, state) do
@@ -141,7 +140,7 @@ defmodule Player do
     ClientProxy.disconnect(state.client, :win)
     {:noreply, state}
   end
-  
+
   @impl true
   def handle_cast(:stop, state) do
     Entity.stop(state.entity)
@@ -162,12 +161,12 @@ defmodule Player do
   end
 
   @impl true
-  def handle_cast({:receive_state, state_received}, state) do
+  def handle_cast({:receive_state, state_received, parce_player}, state) do
     # TODO: Estaría bueno que Player no dependa de ClientProxy
     # Se podrá inyectar un callback para no tener que llamar explicitamente?
     Logger.debug("Receiving state: ")
     Logger.debug(inspect(state_received))
-    ClientProxy.receive_state(state.client, state_received)
+    ClientProxy.receive_state(state.client, state_received, parce_player)
     {:noreply, state}
   end
 end

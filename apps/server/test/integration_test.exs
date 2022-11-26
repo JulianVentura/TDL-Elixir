@@ -8,7 +8,7 @@ defmodule ClientProxyMock do
     {:ok, :ok}
   end
 
-  def handle_cast({:receive_state, _recv_state}, _state) do
+  def handle_cast({:receive_state, _recv_state, _parse_player}, _state) do
     {:noreply, :ok}
   end
 
@@ -315,7 +315,7 @@ defmodule IntegrationTest do
       enemies: enemies
     } = Room.get_state(room1)
 
-    :timer.sleep(100)
+    :timer.sleep(1700)
     assert length(enemies) == 2
     assert Player.get_state(player1).health + Player.get_state(player2).health == 180
 
