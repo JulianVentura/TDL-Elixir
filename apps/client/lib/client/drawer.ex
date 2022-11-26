@@ -25,10 +25,14 @@ defmodule Drawer do
     end
   end
 
+  defp _fill(left, fill, right) do
+    "#{left}#{String.pad_trailing("", 38, fill)}#{right}\n"
+  end
+
   defp _parse_entities(players, enemies, player) do
-    "/#{String.pad_trailing("", 38, "-")}\\\n" <>
+    _fill("/", "-", "\\") <>
     "|#{String.pad_trailing("JUGADORES", 18)}| #{String.pad_trailing("ENEMIGOS", 18)}|\n" <>
-    "|#{String.pad_trailing("", 38, "-")}|\n" <>
+    _fill("|", "-", "|") <>
     List.to_string(for i <- 0..max(length(players), length(enemies)) do
       p = if i < length(players) do Enum.at(players, i) else nil end
       e = if i < length(enemies) do Enum.at(enemies, i) else nil end
@@ -37,7 +41,7 @@ defmodule Drawer do
       parsed_p2 = 
       "|#{if p && p.id == player.id do "#{format_player(parsed_p)}" else parsed_p end}| #{parsed_e}|\n"
     end) <>
-    "\\#{String.pad_trailing("", 38, "-")}/"
+    _fill("\\", "-", "/")
   end
 
   defp _draw_state(state) do
