@@ -58,12 +58,15 @@ defmodule Drawer do
   end
 
   defp _draw_state(state) do
-      IO.puts("""
-      #{_parse_entities(state.players, state.enemies, state.player.id, state.turn)}
-      #{_format_color(:blue,"Destinos: #{Enum.map(state.rooms, fn r -> "#{r} " end)}")}
-      """)
+      IO.puts(_parse_entities(state.players, state.enemies, state.player.id, state.turn))
+      
+      if Enum.empty?(state.enemies) do
+        IO.puts(_format_color(:blue,"Destinos: #{Enum.map(state.rooms, fn r -> "#{r} " end)}"))
+      end
+      
+      IO.write("> ")
       if state.turn in Enum.map(state.enemies, fn e -> e.id end) do
-        :timer.sleep(1750)
+        :timer.sleep(1500)
       end
   end
 
