@@ -29,6 +29,7 @@ defmodule CommandParser do
     \nComandos:
       attack <enemy>
       move <direction>
+      help
       exit
 
     Ingresa un comando:
@@ -39,6 +40,7 @@ defmodule CommandParser do
     case command do
       ["attack", enemy] -> _attack(enemy)
       ["move", direction] -> _move(direction)
+      ["help"] -> IO.puts(_helper_text())
       ["exit"] -> _exit()
       _ -> IO.puts("Comando inválido, intenta otra vez\n")
     end

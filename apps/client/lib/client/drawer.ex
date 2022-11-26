@@ -25,30 +25,26 @@ defmodule Drawer do
     end
   end
 
-  defp _parse_entities(players, enemies) do
+  defp _parse_entities(players, enemies, player) do
     "/#{String.pad_trailing("", 38, "-")}\\\n" <>
     "|#{String.pad_trailing("JUGADORES", 18)}| #{String.pad_trailing("ENEMIGOS", 18)}|\n" <>
     "|#{String.pad_trailing("", 38, "-")}|\n" <>
     List.to_string(for i <- 0..max(length(players), length(enemies)) do
       p = if i < length(players) do Enum.at(players, i) else nil end
       e = if i < length(enemies) do Enum.at(enemies, i) else nil end
-      "|#{_parse_entity(p)}| #{_parse_entity(e)}|\n"
+      parsed_p = _parse_entity(p)
+      parsed_e = _parse_entity(e)
+      parsed_p2 = 
+      "|#{if p && p.id == player.id do "#{format_player(parsed_p)}" else parsed_p end}| #{parsed_e}|\n"
     end) <>
-    "\\#{String.pad_trailing("", 38, "-")}/\n"
+    "\\#{String.pad_trailing("", 38, "-")}/"
   end
 
   defp _draw_state(state) do
       """
       #{format_turn("Turno: #{state.turn}")}
-      #{_parse_entities(state.players, state.enemies)}
+      #{_parse_entities(state.players, state.enemies, state.player)}
       #{format_room("Destinos: #{Enum.map(state.rooms, fn r -> "#{r} " end)}")}
-      #{format_player("Tu Jugador: #{_parse_entity(state.player)}")}
-      \nComandos:
-        attack <enemy>
-        move <direction>
-        exit
-
-      Ingresa un comando:
       """
   end
 
