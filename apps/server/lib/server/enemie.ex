@@ -55,14 +55,16 @@ defmodule Enemie do
     Entity.get_state(entity).stance
   end
 
-  @spec choose_player_to_attack(pid, list) :: pid
+  @spec choose_player_to_attack(pid, list) :: map()
   def choose_player_to_attack(_enemie, players) do
     IA.choose_player_to_attack(players, :basic_ia)
   end
 
   @spec stop(id) :: atom()
   def stop(enemie) do
-    Agent.stop(enemie)
+    entity = _get_state(enemie, :entity)
+    Entity.stop(entity)
+    Agent.stop(enemie, :normal)
   end
 
   # Private helper functions

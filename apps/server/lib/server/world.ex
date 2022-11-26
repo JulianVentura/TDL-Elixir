@@ -9,10 +9,6 @@ defmodule World do
     GenServer.start_link(__MODULE__, {world_file_path, max_players})
   end
 
-  def finish(world) do
-    GenServer.cast(world, :finish)
-  end
-
   def finished?(world) do
     GenServer.call(world, :finished?)
   end
@@ -103,12 +99,6 @@ defmodule World do
     }
 
     {:ok, state}
-  end
-
-  @impl true
-  def handle_cast(:finish, state) do
-    new_state = %{state | finished: true}
-    {:noreply, new_state}
   end
 
   @impl true

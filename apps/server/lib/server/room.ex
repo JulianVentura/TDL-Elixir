@@ -104,7 +104,7 @@ defmodule Room do
 
     new_state =
       if type == "exit" do
-        Player.disconnect(player, :win)
+        Player.win(player)
         World.remove_player(world, player)
         state
       else
@@ -193,6 +193,8 @@ defmodule Room do
   def handle_cast({:add_enemie, enemie}, state) do
     %{
       enemies: enemies,
+      players: players,
+      world: world,
       turn_order: turn_order,
       turn: turn,
       monitor: monitor
@@ -207,6 +209,21 @@ defmodule Room do
         enemie,
         turn == :enemie
       )
+
+    {player_turn, _} =
+      turn_order
+      |> Map.to_list()
+      |> Enum.filter(fn {_player, turn} -> turn end)
+      |> List.first() ||
+        {nil, nil}
+
+    _broadcast_game_state(
+      true,
+      player_turn,
+      players,
+      enemies,
+      world
+    )
 
     {:noreply, %State{state | turn_order: turn_order, enemies: enemies, monitor: monitor}}
   end
@@ -224,7 +241,7 @@ defmodule Room do
   end
 
   @impl true
-  def handle_info({:DOWN, ref, _, _, _}, state) do
+  def handle_info({:DOWN, _, :process, pid, :killed}, state) do
     %{
       world: world,
       monitor: monitor,
@@ -234,7 +251,7 @@ defmodule Room do
       turn: turn
     } = state
 
-    {pid, monitor} = Monitor.delete_by_ref(monitor, ref)
+    monitor = Monitor.demonitor(monitor, pid)
 
     Logger.info("Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(pid)}")
 
@@ -260,6 +277,7 @@ defmodule Room do
         state
       end
 
+    Logger.info("Ending Change Turn for Down pid player #{inspect(pid)}")
     turn_order = Map.delete(new_state.turn_order, pid)
     enemies = List.delete(enemies, pid)
     players = List.delete(players, pid)
@@ -282,6 +300,13 @@ defmodule Room do
     }
 
     {:noreply, new_state2}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _, :process, pid, _}, state) do
+    Logger.info("Process DOWN: #{inspect(pid)} with exit")
+    # Do nothing
+    {:noreply, state}
   end
 
   # Private functions
@@ -369,8 +394,14 @@ defmodule Room do
         health = Player.be_attacked(player, amount, stance)
 
         case health do
-          0 -> r = _remove_player(player, state); Player.disconnect(player, :lose); r
-          _ -> state
+          0 ->
+            r = _remove_player(player, state)
+            Player.kill(player)
+            World.remove_player(state.world, player)
+            r
+
+          _ ->
+            state
         end
     end
   end
@@ -392,11 +423,24 @@ defmodule Room do
     new_turn_order =
       case {change_turn, turn} do
         {true, :player} ->
+          Logger.info("Broadcast true :player")
           _broadcast_game_state(true, List.first(defendees), defendees, attackees, state.world)
           Map.put(turn_order, List.first(defendees), true)
 
         {true, :enemie} ->
-          _broadcast_game_state(true, nil, attackees, defendees, state.world)
+          Logger.info("Broadcast true :enemie")
+
+          _broadcast_game_state(
+            if is_dead do
+              attacker
+            else
+              true
+            end,
+            nil,
+            attackees,
+            defendees,
+            state.world
+          )
 
           for enemie <- defendees do
             %{player: player_to_attack, amount: amount} =
@@ -413,6 +457,8 @@ defmodule Room do
 
           case turn do
             :player ->
+              Logger.info("Broadcast false :player")
+
               _broadcast_game_state(
                 true,
                 next_attacker,
@@ -422,6 +468,8 @@ defmodule Room do
               )
 
             :enemie ->
+              Logger.info("Broadcast false :enemie")
+
               _broadcast_game_state(
                 if is_dead do
                   attacker
@@ -448,6 +496,8 @@ defmodule Room do
   end
 
   def _broadcast_game_state(true, turn, players, enemies, world) do
+    Logger.info("Broadcasting game state with players #{inspect(players)}")
+
     new_state = %{
       enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
       players: players,
@@ -459,6 +509,8 @@ defmodule Room do
   end
 
   def _broadcast_game_state(dead_player, turn, players, enemies, world) do
+    Logger.info("Broadcasting game state 2 with players #{inspect(players)}")
+
     new_state = %{
       enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
       players: players -- [dead_player],
@@ -472,15 +524,19 @@ defmodule Room do
   def _remove_enemie(enemie, state) do
     %{
       enemies: enemies,
-      turn_order: turn_order
+      turn_order: turn_order,
+      monitor: monitor
     } = state
 
     Enemie.stop(enemie)
 
+    monitor = Monitor.demonitor(monitor, enemie)
+
     %State{
       state
       | turn_order: Map.delete(turn_order, enemie),
-        enemies: List.delete(enemies, enemie)
+        enemies: List.delete(enemies, enemie),
+        monitor: monitor
     }
   end
 

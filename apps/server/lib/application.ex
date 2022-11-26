@@ -5,6 +5,7 @@ defmodule Server.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      ProcessKiller,
       GameMaker,
       {DynamicSupervisor, name: EnemySupervisor, strategy: :one_for_one},
       {DynamicSupervisor, name: WorldSupervisor, strategy: :one_for_one},

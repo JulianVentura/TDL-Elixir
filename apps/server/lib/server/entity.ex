@@ -60,6 +60,12 @@ defmodule Entity do
     } = _get_state(entity)
     _update_state(entity, :health, max_health)
   end
+  
+  @spec stop(id) :: atom()
+  def stop(entity) do
+    Agent.stop(entity, :normal)
+    :ok
+  end
 
   # Private helper functions
 
