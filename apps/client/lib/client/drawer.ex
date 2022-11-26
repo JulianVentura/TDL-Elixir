@@ -1,14 +1,18 @@
 defmodule Drawer do
   def draw(game_state, arg) do
     IEx.Helpers.clear()
-    IO.puts(_draw_state(game_state))
+    _draw_state(game_state)
+  end
+
+  defp _format_color(color, str) do
+    "#{IO.ANSI.format([color, :bright, str])}"
   end
 
   defp _parse_stance(stance) do
     case stance do
-      :fire -> IO.ANSI.format([:red, :bright, "F"])
-      :water -> IO.ANSI.format([:blue, :bright, "A"])
-      :plant -> IO.ANSI.format([:green, :bright, "P"])
+      :fire -> _format_color(:red, "F")
+      :water -> _format_color(:blue, "A")
+      :plant -> _format_color(:green, "P")
       _ -> "-"
     end
   end
@@ -29,46 +33,41 @@ defmodule Drawer do
     "#{left}#{String.pad_trailing("", 38, fill)}#{right}\n"
   end
 
-  defp _parse_entities(players, enemies, player) do
+  defp _color_turn(turn_id, entity) do
+    parsed = _parse_entity(entity)
+    if entity && entity.id == turn_id do _format_color(:yellow, parsed) else parsed end
+  end
+
+  defp _color_is_player(player_id, entity, parsed) do
+    if entity && entity.id == player_id do _format_color(:green, parsed) else parsed end
+  end
+
+  defp _parse_entities(players, enemies, player_id, turn_id) do
     _fill("/", "-", "\\") <>
     "|#{String.pad_trailing("JUGADORES", 18)}| #{String.pad_trailing("ENEMIGOS", 18)}|\n" <>
     _fill("|", "-", "|") <>
     List.to_string(for i <- 0..max(length(players), length(enemies)) do
       p = if i < length(players) do Enum.at(players, i) else nil end
       e = if i < length(enemies) do Enum.at(enemies, i) else nil end
-      parsed_p = _parse_entity(p)
-      parsed_e = _parse_entity(e)
-      parsed_p2 = 
-      "|#{if p && p.id == player.id do "#{format_player(parsed_p)}" else parsed_p end}| #{parsed_e}|\n"
+      parsed_e = _color_turn(turn_id, e)
+      parsed_p = _color_turn(turn_id, p)
+      parsed_p = _color_is_player(player_id, p, parsed_p)
+      "|#{parsed_p}| #{parsed_e}|\n"
     end) <>
     _fill("\\", "-", "/")
   end
 
   defp _draw_state(state) do
-      """
-      #{format_turn("Turno: #{state.turn}")}
-      #{_parse_entities(state.players, state.enemies, state.player)}
-      #{format_room("Destinos: #{Enum.map(state.rooms, fn r -> "#{r} " end)}")}
-      """
+      IO.puts("""
+      #{_parse_entities(state.players, state.enemies, state.player.id, state.turn)}
+      #{_format_color(:blue,"Destinos: #{Enum.map(state.rooms, fn r -> "#{r} " end)}")}
+      """)
+      if state.turn in Enum.map(state.enemies, fn e -> e.id end) do
+        :timer.sleep(1750)
+      end
   end
 
   def draw_msg(msg) do
     IO.puts(msg)
-  end
-
-  defp format_enemy(enemy) do
-    IO.ANSI.format([:red, :bright, enemy])
-  end
-
-  defp format_player(player) do
-    IO.ANSI.format([:green, :bright, player])
-  end
-
-  defp format_turn(turn) do
-    IO.ANSI.format([:yellow, :bright, turn])
-  end
-
-  defp format_room(room) do
-    IO.ANSI.format([:blue, :bright, room])
   end
 end
