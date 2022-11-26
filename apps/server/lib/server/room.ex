@@ -436,7 +436,7 @@ defmodule Room do
             else
               true
             end,
-            nil,
+            List.first(defendees),
             attackees,
             defendees,
             state.world
