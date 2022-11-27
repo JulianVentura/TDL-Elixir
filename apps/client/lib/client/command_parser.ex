@@ -55,7 +55,7 @@ defmodule CommandParser do
   end
 
   defp _exit() do
-    # TODO: ver que hacer para salir
-    exit("Gracias por jugar")
+    Drawer.draw_msg("Gracias por jugar")
+    System.stop(0)
   end
 end
