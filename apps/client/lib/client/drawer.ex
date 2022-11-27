@@ -64,6 +64,10 @@ defmodule Drawer do
         IO.puts(" DESTINOS: " <> _format_color(:blue, "#{Enum.map(state.rooms, fn r -> "#{r} " end)}"))
       end
       
+      if state.turn in Enum.map(state.enemies, fn e -> e.id end) do
+        :timer.sleep(1500)
+      end
+      
       IO.write("\n> ")
   end
 

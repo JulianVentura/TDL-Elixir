@@ -1,5 +1,5 @@
 Comienzo,0,start,Afueras,Tesoro
-Afueras,2,outskirts,Comienzo,Refugio,Tumba
+Afueras,4,outskirts,Comienzo,Refugio,Tumba
 Refugio,0,safe,Afueras
 Tumba,1,tomb,Afueras,Jefe
 Jefe,1,boss,Tumba,Tesoro
