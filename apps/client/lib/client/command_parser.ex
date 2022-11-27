@@ -19,7 +19,6 @@ defmodule CommandParser do
       |> String.trim()
       |> String.split(" ")
 
-    # TODO: ver como manejar en caso de comando erroneo, por proxy o acá con su respuesta
     _process_command(command)
     run()
   end
@@ -27,8 +26,8 @@ defmodule CommandParser do
   defp _helper_text() do
     """
     \nComandos:
-      atacar <enemigo>
-      mover <direccion>
+      atacar <enemigo> / a <enemigo>
+      mover <destino> / m <destino>
       ayuda
       salir
 
@@ -39,7 +38,9 @@ defmodule CommandParser do
   defp _process_command(command) do
     case command do
       ["atacar", enemy] -> _attack(enemy)
+      ["a", enemy] -> _attack(enemy)
       ["mover", direction] -> _move(direction)
+      ["m", direction] -> _move(direction)
       ["ayuda"] -> IO.puts(_helper_text())
       ["salir"] -> _exit()
       _ -> IO.puts("Comando inválido, si necesitas ayuda, escribe 'ayuda'\n")
