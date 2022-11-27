@@ -7,7 +7,7 @@ defmodule Client.Application do
 
   @impl true
   def start(_type, _args) do
-    server_name = :server@localhost
+    server_name = Application.get_env(:client, :server_name)
 
     Node.connect(server_name)
 
