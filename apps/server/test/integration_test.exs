@@ -12,7 +12,7 @@ defmodule ClientProxyMock do
     {:noreply, :ok}
   end
 
-  def handle_cast({:disconnect, reason}, state) do
+  def handle_cast({:disconnect, _reason}, _state) do
     {:noreply, :ok}
   end
 end
@@ -204,8 +204,6 @@ defmodule IntegrationTest do
     } = Room.get_state(room1)
 
     assert length(enemies) == 1
-
-    IO.puts("enemies #{inspect(enemies)}")
 
     Player.attack(player2, List.first(enemies))
 

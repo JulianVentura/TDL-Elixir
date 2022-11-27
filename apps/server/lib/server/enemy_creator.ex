@@ -28,7 +28,6 @@ defmodule EnemyCreator do
 
   def create_enemies(room_type, room, amount) do
     stances = Dmg.get_stances()
-    IO.inspect(stances)
 
     case room_type do
       "outskirts" -> _create_enemies(room, amount, Application.get_env(:entities, :bandido), stances, :random_ia)
