@@ -22,8 +22,6 @@ defmodule CommandParser do
       mover <destino> / m <destino>
       ayuda
       salir
-
-    Ingresa un comando:
     """
   end
 
@@ -33,9 +31,9 @@ defmodule CommandParser do
       ["a", enemy] -> _attack(enemy)
       ["mover", direction] -> _move(direction)
       ["m", direction] -> _move(direction)
-      ["ayuda"] -> IO.puts(_helper_text())
+      ["ayuda"] -> Drawer.draw_msg(_helper_text())
       ["salir"] -> _exit()
-      _ -> IO.puts("Comando inválido, si necesitas ayuda, escribe 'ayuda'\n")
+      _ -> Drawer.draw_msg("Comando inválido, si necesitas ayuda, escribe 'ayuda'")
     end
   end
 

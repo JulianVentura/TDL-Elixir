@@ -31,7 +31,7 @@ defmodule ServerProxy do
     Logger.info("Connecting to GameMaker on #{server_name}")
     response = IGameMaker.new_game({GameMaker, server_name}, {ServerProxy, node()})
 
-    {client_proxy_name, node_address} = 
+    {client_proxy_name, node_address} =
       case response do
         {:ok, v} -> v
         :error -> finish("No se ha podido iniciar una sesión")
@@ -42,8 +42,10 @@ defmodule ServerProxy do
       client_proxy = {client_proxy_name, node_address}
       Logger.info("Connection established")
 
-      # TODO: creo que puede romper con el estado vacío en los handle_call attack y move
-      state = %{}
+      state = %{
+        players: [],
+        enemies: []
+      }
 
       {:ok, {client_proxy, state}}
     else
@@ -68,7 +70,7 @@ defmodule ServerProxy do
       IClientProxy.attack(client_proxy, enemy)
       {:reply, :ok, {client_proxy, state}}
     else
-      Drawer.draw(state, {"err", "Enemigo inválido"})
+      Drawer.draw_msg("Enemigo inválido")
       {:reply, :error, {client_proxy, state}}
     end
   end
@@ -80,7 +82,7 @@ defmodule ServerProxy do
       IClientProxy.move(client_proxy, room)
       {:reply, :ok, {client_proxy, state}}
     else
-      Drawer.draw(state, {"err", "Habitación inexistente"})
+      Drawer.draw_msg("Destino inexistente")
       {:reply, :error, {client_proxy, state}}
     end
 
