@@ -1,12 +1,4 @@
 defmodule CommandParser do
-  # TODO: creo que con el use Task no es necesario
-  # def child_spec(arg) do
-  #   %{
-  #     id: Client.Client,
-  #     start: {Client.Client, :game_loop, [arg]}
-  #   }
-  # end
-
   use Task
 
   def start_link(_arg) do
