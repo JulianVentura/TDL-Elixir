@@ -10,12 +10,16 @@ defmodule GameMaker do
   def new_game(maker, addr) do
     GenServer.call(maker, {:new_game, addr})
   end
+  
+  def redirect(maker, addr) do
+    GenServer.call(maker, {:redirect, addr})
+  end
 
   # Server API
 
   @impl true
   def init(:ok) do
-    max_clients = 20
+    max_clients = 1
     Logger.info("Starting GameMaker with #{max_clients} client capacity")
     {:ok, _} = ClientProxyMaker.start_link(max_clients)
     {:ok, []}
@@ -25,14 +29,39 @@ defmodule GameMaker do
   def handle_call({:new_game, cli_addr}, _from, worlds) do
       {result, new_state} = 
         case ClientProxyMaker.full?(ClientProxyMaker) do
-          true -> {:error, worlds} # TODO: Here we should redirect the client to another machine or something like that
-          false -> set_new_game(worlds, cli_addr) 
+          true -> 
+            nodes = NodeDirectory.get_neighbors(NodeDirectory)
+            r = redirect_request(cli_addr, nodes) 
+            {r, worlds}
+          false -> set_new_game(worlds, cli_addr)
         end
 
       {:reply, result, new_state}
   end
+  
+  @impl true
+  def handle_call({:redirect, cli_addr}, _from, worlds) do
+      {result, new_state} = 
+        case ClientProxyMaker.full?(ClientProxyMaker) do
+          true -> {:error, worlds}
+          false -> set_new_game(worlds, cli_addr)
+        end
 
-  def set_new_game(worlds, cli_addr) do
+      {:reply, result, new_state}
+  end
+  
+  defp redirect_request(_, []) do
+    :error
+  end
+
+  defp redirect_request(cli_addr, [addr | t]) do
+    case GameMaker.redirect({GameMaker, addr}, cli_addr) do     
+      {:ok, result} -> {:ok, result}
+      :error -> redirect_request(cli_addr, t)
+    end
+  end
+
+  defp set_new_game(worlds, cli_addr) do
       
       spawn_if_necessary = fn 
         [] -> 
@@ -72,7 +101,7 @@ defmodule GameMaker do
 
       new_worlds = Enum.concat(full, not_full)
 
-      {{name, node()}, new_worlds}
+      {{:ok, {name, node()}}, new_worlds}
     end
   
   @impl true

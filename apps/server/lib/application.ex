@@ -6,6 +6,7 @@ defmodule Server.Application do
   def start(_type, _args) do
     children = [
       ProcessKiller,
+      NodeDirectory,
       GameMaker,
       {DynamicSupervisor, name: EnemySupervisor, strategy: :one_for_one},
       {DynamicSupervisor, name: WorldSupervisor, strategy: :one_for_one},
