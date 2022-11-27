@@ -1,10 +1,11 @@
 defmodule Enemie do
   defmodule State do
-    defstruct [:entity, :room]
+    defstruct [:entity, :room, :ia_type]
 
     @type t() :: %__MODULE__{
             entity: pid | atom | nil,
-            room: pid | atom | nil
+            room: pid | atom | nil,
+            ia_type: atom | nil,
           }
   end
 
@@ -21,10 +22,10 @@ defmodule Enemie do
   @type key :: atom
   @type state_attribute :: entity
 
-  @spec start_link(name, health, stance, pid) :: any
-  def start_link(name, health, initial_stance, room) do
+  @spec start_link(name, health, stance, pid, atom) :: any
+  def start_link(name, health, initial_stance, room, ia_type) do
     entity = Entity.start_link(name, health, initial_stance)
-    state = %State{entity: entity, room: room}
+    state = %State{entity: entity, room: room, ia_type: ia_type}
 
     {:ok, pid} = Agent.start_link(fn -> state end)
     Room.add_enemie(room, pid)
@@ -56,8 +57,9 @@ defmodule Enemie do
   end
 
   @spec choose_player_to_attack(pid, list) :: map()
-  def choose_player_to_attack(_enemie, players) do
-    IA.choose_player_to_attack(players, :basic_ia)
+  def choose_player_to_attack(enemie, players) do
+    ia_type = _get_state(enemie, :ia_type)
+    IA.choose_player_to_attack(players, ia_type)
   end
 
   @spec stop(id) :: atom()
