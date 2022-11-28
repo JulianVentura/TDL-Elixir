@@ -66,8 +66,9 @@ defmodule ServerProxy do
     enemy_exists = Enum.any?(state[:enemies], fn e -> e.id == enemy end)
 
     if enemy_exists do
-      Drawer.draw(state, {"command", "Atacaste a #{enemy}"})
+      Drawer.draw(state)
       IClientProxy.attack(client_proxy, enemy)
+      # TODO: Ver si se puede estos error de clientproxy
       {:reply, :ok, {client_proxy, state}}
     else
       Drawer.draw_msg("Enemigo inválido")
@@ -78,8 +79,9 @@ defmodule ServerProxy do
   @impl true
   def handle_call({:move, room}, _from, {client_proxy, state}) do
     if room in state[:rooms] do
-      Drawer.draw(state, {"command", "Te moviste a #{room}"})
+      Drawer.draw(state)
       IClientProxy.move(client_proxy, room)
+      # TODO: Ver si se puede estos error de clientproxy
       {:reply, :ok, {client_proxy, state}}
     else
       Drawer.draw_msg("Destino inexistente")
@@ -93,7 +95,7 @@ defmodule ServerProxy do
   def handle_cast({:receive_state, received_state}, {client_proxy, _}) do
     # Logger.debug("Receive state")
     # Logger.debug(inspect received_state)
-    Drawer.draw(received_state, nil)
+    Drawer.draw(received_state)
 
     {:noreply, {client_proxy, received_state}}
   end
