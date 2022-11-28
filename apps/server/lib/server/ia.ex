@@ -29,11 +29,10 @@ defmodule IA do
 
   @spec _random_ia(list) :: map
   def _random_ia(players) do
-    %{
-      player:
-        players
-        |> Enum.random(),
-      amount: 10
-    }
+    if Enum.empty?(players) do
+      %{player: nil, amount: 0}
+    else
+      %{player: Enum.random(players), amount: 10}
+    end
   end
 end
