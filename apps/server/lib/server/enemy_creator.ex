@@ -30,12 +30,12 @@ defmodule EnemyCreator do
     stances = Dmg.get_stances()
 
     case room_type do
-      "outskirts" -> _create_enemies(room, amount, Application.get_env(:entities, :bandido), stances, :random_ia)
-      "trap" -> _create_enemies(room, amount, Application.get_env(:entities, :automata), stances, :random_ia)
-      "tomb" -> _create_enemies(room, amount, Application.get_env(:entities, :renacido), stances, :random_ia)
-      "boss" -> _create_enemies(room, amount, Application.get_env(:entities, :vges_gis), stances, :random_ia)
+      "outskirts" -> _create_enemies(room, amount, Application.get_env(:entities, :outskirts), stances, :random_ia)
+      "trap" -> _create_enemies(room, amount, Application.get_env(:entities, :trap), stances, :random_ia)
+      "tomb" -> _create_enemies(room, amount, Application.get_env(:entities, :tomb), stances, :random_ia)
+      "boss" -> _create_enemies(room, amount, Application.get_env(:entities, :boss), [:fire], :random_ia)
       "test" -> _create_enemies(room, amount, {"Test", 1, 1}, [:fire], :basic_ia)
-      _ -> _create_enemies(room, amount, Application.get_env(:entities, :goblin), stances, :random_ia)
+      _ -> _create_enemies(room, amount, Application.get_env(:entities, :other), stances, :random_ia)
     end
   end
 end
