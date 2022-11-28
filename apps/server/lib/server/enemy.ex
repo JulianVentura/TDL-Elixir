@@ -1,11 +1,11 @@
-defmodule Enemie do
+defmodule Enemy do
   defmodule State do
     defstruct [:entity, :room, :ia_type]
 
     @type t() :: %__MODULE__{
             entity: pid | atom | nil,
             room: pid | atom | nil,
-            ia_type: atom | nil,
+            ia_type: atom | nil
           }
   end
 
@@ -28,56 +28,56 @@ defmodule Enemie do
     state = %State{entity: entity, room: room, ia_type: ia_type}
 
     {:ok, pid} = Agent.start_link(fn -> state end)
-    Room.add_enemie(room, pid)
+    Room.add_enemy(room, pid)
     {:ok, pid}
   end
 
-  def get_state(enemie) do
-    enemie
+  def get_state(enemy) do
+    enemy
     |> _get_state(:entity)
     |> Entity.get_state()
   end
 
   @spec be_attacked(id, integer, stance) :: integer
-  def be_attacked(enemie, amount, other_stance) do
+  def be_attacked(enemy, amount, other_stance) do
     %{
       entity: entity
-    } = _get_state(enemie)
+    } = _get_state(enemy)
 
     Entity.attack(entity, amount, other_stance)
   end
 
   @spec get_stance(id) :: stance
-  def get_stance(enemie) do
+  def get_stance(enemy) do
     %{
       entity: entity
-    } = _get_state(enemie)
+    } = _get_state(enemy)
 
     Entity.get_state(entity).stance
   end
 
   @spec choose_player_to_attack(pid, list) :: map()
-  def choose_player_to_attack(enemie, players) do
-    ia_type = _get_state(enemie, :ia_type)
+  def choose_player_to_attack(enemy, players) do
+    ia_type = _get_state(enemy, :ia_type)
     IA.choose_player_to_attack(players, ia_type)
   end
 
   @spec stop(id) :: atom()
-  def stop(enemie) do
-    entity = _get_state(enemie, :entity)
+  def stop(enemy) do
+    entity = _get_state(enemy, :entity)
     Entity.stop(entity)
-    Agent.stop(enemie, :normal)
+    Agent.stop(enemy, :normal)
   end
 
   # Private helper functions
 
   @spec _get_state(id) :: State.t()
-  defp _get_state(enemie) do
-    Agent.get(enemie, & &1)
+  defp _get_state(enemy) do
+    Agent.get(enemy, & &1)
   end
 
   @spec _get_state(id, key) :: state_attribute
-  defp _get_state(enemie, key) do
-    Agent.get(enemie, &Map.get(&1, key))
+  defp _get_state(enemy, key) do
+    Agent.get(enemy, &Map.get(&1, key))
   end
 end

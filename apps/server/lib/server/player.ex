@@ -61,8 +61,8 @@ defmodule Player do
   end
 
   @spec attack(id, id) :: integer
-  def attack(player, enemie) do
-    GenServer.call(player, {:attack, player, enemie})
+  def attack(player, enemy) do
+    GenServer.call(player, {:attack, player, enemy})
   end
 
   def move(player, direction) do
@@ -116,9 +116,9 @@ defmodule Player do
   end
 
   @impl true
-  def handle_call({:attack, player, enemie}, _from, state) do
+  def handle_call({:attack, player, enemy}, _from, state) do
     {error, msg} =
-      Room.attack(state.room, player, enemie, 10, Entity.get_state(state.entity).stance)
+      Room.attack(state.room, player, enemy, 10, Entity.get_state(state.entity).stance)
 
     {:reply, {error, msg}, state}
   end
