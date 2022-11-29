@@ -30,7 +30,7 @@ defmodule Drawer do
   end
 
   defp _fill(left, middle, right, fill) do
-    "#{left}#{String.pad_trailing("", 18, fill)}#{middle}#{String.pad_trailing("", 19, fill)}#{right}\n"
+    "#{left}#{String.pad_trailing("", 20, fill)}#{middle}#{String.pad_trailing("", 21, fill)}#{right}\n"
   end
 
   defp _color_turn(turn_id, entity) do
@@ -38,21 +38,19 @@ defmodule Drawer do
     if entity && entity.id == turn_id do _format_color(:yellow, parsed) else parsed end
   end
 
-  defp _color_is_player(player_id, entity, parsed) do
-    if entity && entity.id == player_id do _format_color(:green, parsed) else parsed end
-  end
-
   defp _parse_entities(players, enemies, player_id, turn_id) do
     _fill("┌", "┬", "┐","─") <>
-    "│#{String.pad_trailing("JUGADORES", 18)}│ #{String.pad_trailing("ENEMIGOS", 18)}│\n" <>
+    "│#{String.pad_trailing("JUGADORES", 20)}│ #{String.pad_trailing("ENEMIGOS", 20)}│\n" <>
     _fill("├", "┼", "┤","─") <>
     List.to_string(for i <- 0..max(length(players), length(enemies)) do
       p = if i < length(players) do Enum.at(players, i) else nil end
       e = if i < length(enemies) do Enum.at(enemies, i) else nil end
+      symbol = if p && p.id == player_id do "*" else " " end
       parsed_e = _color_turn(turn_id, e)
+      parsed_e = _format_color(:red, parsed_e)
       parsed_p = _color_turn(turn_id, p)
-      parsed_p = _color_is_player(player_id, p, parsed_p)
-      "│#{parsed_p}│ #{parsed_e}│\n"
+      parsed_p = _format_color(:green, parsed_p)
+      "│#{symbol} #{parsed_p}│ #{parsed_e}  │\n"
     end) <>
     _fill("└", "┴", "┘","─")
   end
