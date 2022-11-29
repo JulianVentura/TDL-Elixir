@@ -84,14 +84,13 @@ defmodule Room do
 
   @impl true
   def handle_call({:attack, attacker, defender, amount, room, stance}, _from, state) do
-    Logger.info("Room stance #{inspect(stance)}")
     {error, new_state} = _attack_handler(attacker, defender, amount, room, state, stance)
     {:reply, error, new_state}
   end
 
   @impl true
   def handle_call({:add_player, player, room}, _from, state) do
-    Logger.info("Room #{inspect(self())}: Adding player #{inspect(player)}; type #{state.type}")
+    Logger.info("Room #{inspect(self())}: Adding player #{inspect(player)}")
 
     %{
       world: world,
@@ -292,7 +291,6 @@ defmodule Room do
         state
       end
 
-    Logger.info("Ending Change Turn for Down pid player #{inspect(pid)}")
     turn_order = Map.delete(new_state.turn_order, pid)
     enemies = List.delete(enemies, pid)
     players = List.delete(players, pid)
@@ -324,8 +322,7 @@ defmodule Room do
   end
 
   @impl true
-  def handle_info({:DOWN, _, :process, pid, _}, state) do
-    Logger.info("Process DOWN: #{inspect(pid)} with exit")
+  def handle_info({:DOWN, _, :process, _pid, _}, state) do
     # Do nothing
     {:noreply, state}
   end
@@ -333,8 +330,6 @@ defmodule Room do
   # Private functions
 
   def _attack_handler(attacker, defender, amount, room, state, stance) do
-    Logger.info("Room attack handler #{inspect(stance)}")
-
     %{
       players: players,
       enemies: enemies
@@ -378,8 +373,6 @@ defmodule Room do
   end
 
   def _attack_player(enemy, player, amount, state, room) do
-    Logger.info("Attack Player #{inspect(Enemy.get_stance(enemy))}")
-
     %{
       turn: turn,
       turn_order: turn_order,
@@ -405,7 +398,6 @@ defmodule Room do
   end
 
   def _attack(enemy, player, direction, amount, state, stance) do
-    Logger.info("Room _attack #{inspect(stance)}")
     # Si direction es player, entonces player ataca a enemy, si no, enemy ataca a player
     case direction do
       :player ->
@@ -418,7 +410,6 @@ defmodule Room do
 
       :enemy ->
         health = Player.be_attacked(player, amount, stance)
-        Logger.info("Health #{inspect(health)}")
 
         case health do
           0 ->
@@ -450,8 +441,6 @@ defmodule Room do
     new_turn_order =
       case {change_turn, turn} do
         {true, :player} ->
-          Logger.info("Broadcast true :player")
-
           BroadCaster.broadcast_game_state(
             :with_player_state,
             List.first(defendees),
@@ -463,8 +452,6 @@ defmodule Room do
           Map.put(turn_order, List.first(defendees), true)
 
         {true, :enemy} ->
-          Logger.info("Broadcast true :enemy")
-
           BroadCaster.broadcast_game_state(
             if is_dead do
               attacker
@@ -494,8 +481,6 @@ defmodule Room do
 
           case turn do
             :player ->
-              Logger.info("Broadcast false :player")
-
               %{player: player_to_attack, amount: amount} =
                 Enemy.choose_player_to_attack(next_attacker, defendees)
 
@@ -510,8 +495,6 @@ defmodule Room do
               )
 
             :enemy ->
-              Logger.info("Broadcast false :enemy")
-
               BroadCaster.broadcast_game_state(
                 if is_dead do
                   attacker

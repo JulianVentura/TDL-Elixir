@@ -93,8 +93,6 @@ defmodule ServerProxy do
 
   @impl true
   def handle_cast({:receive_state, received_state}, {client_proxy, _}) do
-    # Logger.debug("Receive state")
-    # Logger.debug(inspect received_state)
     Drawer.draw(received_state)
 
     {:noreply, {client_proxy, received_state}}
@@ -102,13 +100,15 @@ defmodule ServerProxy do
 
   @impl true
   def handle_cast({:disconnect, reason}, {client_proxy, state}) do
-    msg = case reason do
-      :win -> "V I C T O R I A\nEl elixir de la vida brilla en tus manos!"
-      :lose -> "D E R R O T A\nTal vez lo logres en tu próxima vida..."
-      :internal_error -> "Error: Ha ocurrido un error interno"
-      :server_disconnected -> "Error: Server disconnected"
-      _ ->  "Error: Unknown"
-    end
+    msg =
+      case reason do
+        :win -> "V I C T O R I A\nEl elixir de la vida brilla en tus manos!"
+        :lose -> "D E R R O T A\nTal vez lo logres en tu próxima vida..."
+        :internal_error -> "Error: Ha ocurrido un error interno"
+        :server_disconnected -> "Error: Server disconnected"
+        _ -> "Error: Unknown"
+      end
+
     finish(msg)
     {:noreply, {client_proxy, state}}
   end

@@ -18,7 +18,6 @@ defmodule EnemyCreator do
         }
 
         {:ok, pid} = DynamicSupervisor.start_child(EnemySupervisor, child_specs)
-        Logger.debug("Spawned enemy #{name} with pid #{inspect(pid)}")
         pid
       end
     else

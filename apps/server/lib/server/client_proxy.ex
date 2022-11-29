@@ -34,7 +34,9 @@ defmodule ClientProxy do
     stances = Dmg.get_stances()
     stance = Enum.at(stances, rem(players_amount, length(stances)))
 
-    player = Player.start_link(name, Application.get_env(:entities, :player_health), stance, self())
+    player =
+      Player.start_link(name, Application.get_env(:entities, :player_health), stance, self())
+
     room = World.get_first_room(world)
     Room.add_player(room, player)
     World.add_player(world, player)
@@ -130,9 +132,6 @@ defmodule ClientProxy do
       enemies: s_enemies,
       rooms: rooms
     }
-
-    Logger.debug("Sending state to: #{inspect(state.client)}")
-    Logger.debug(send_state)
 
     IServerProxy.receive_state(state.client, send_state)
 

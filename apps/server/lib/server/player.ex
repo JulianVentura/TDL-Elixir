@@ -1,6 +1,4 @@
 defmodule Player do
-  require Logger
-
   defmodule State do
     defstruct [:entity, :room, :client]
 
@@ -164,8 +162,6 @@ defmodule Player do
   def handle_cast({:receive_state, state_received, parce_player}, state) do
     # TODO: Estaría bueno que Player no dependa de ClientProxy
     # Se podrá inyectar un callback para no tener que llamar explicitamente?
-    Logger.debug("Receiving state: ")
-    Logger.debug(inspect(state_received))
     ClientProxy.receive_state(state.client, state_received, parce_player)
     {:noreply, state}
   end

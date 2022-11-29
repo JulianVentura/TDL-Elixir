@@ -27,27 +27,29 @@ defmodule GameMaker do
 
   @impl true
   def handle_call({:new_game, cli_addr}, _from, worlds) do
-      {result, new_state} =
-        case ClientProxyMaker.full?(ClientProxyMaker) do
-          true ->
-            nodes = NodeDirectory.get_neighbors(NodeDirectory)
-            r = redirect_request(cli_addr, nodes)
-            {r, worlds}
-          false -> set_new_game(worlds, cli_addr)
-        end
+    {result, new_state} =
+      case ClientProxyMaker.full?(ClientProxyMaker) do
+        true ->
+          nodes = NodeDirectory.get_neighbors(NodeDirectory)
+          r = redirect_request(cli_addr, nodes)
+          {r, worlds}
 
-      {:reply, result, new_state}
+        false ->
+          set_new_game(worlds, cli_addr)
+      end
+
+    {:reply, result, new_state}
   end
 
   @impl true
   def handle_call({:redirect, cli_addr}, _from, worlds) do
-      {result, new_state} =
-        case ClientProxyMaker.full?(ClientProxyMaker) do
-          true -> {:error, worlds}
-          false -> set_new_game(worlds, cli_addr)
-        end
+    {result, new_state} =
+      case ClientProxyMaker.full?(ClientProxyMaker) do
+        true -> {:error, worlds}
+        false -> set_new_game(worlds, cli_addr)
+      end
 
-      {:reply, result, new_state}
+    {:reply, result, new_state}
   end
 
   defp redirect_request(_, []) do
@@ -62,52 +64,58 @@ defmodule GameMaker do
   end
 
   defp set_new_game(worlds, cli_addr) do
+    spawn_if_necessary = fn
+      [] ->
+        Logger.info("GameMaker: Spawning a new world")
 
-      spawn_if_necessary = fn
-        [] ->
-          Logger.info("GameMaker: Spawning a new world")
-          child_specs = %{
-            id: World,
-            start: {World, :start_link, [Application.get_env(:server, :world_file), Application.get_env(:server, :world_max_players)]},
-            restart: :temporary,
-            type: :worker
-          }
-          {:ok, world} = DynamicSupervisor.start_child(WorldSupervisor, child_specs)
-          [world]
-        v ->
-          Logger.info("GameMaker: Using an existing world")
-          v
-      end
+        child_specs = %{
+          id: World,
+          start:
+            {World, :start_link,
+             [
+               Application.get_env(:server, :world_file),
+               Application.get_env(:server, :world_max_players)
+             ]},
+          restart: :temporary,
+          type: :worker
+        }
 
-      full =
-        worlds
-          |> Enum.filter(fn world -> !World.finished?(world) end)
-          |> Enum.filter(fn world -> World.full?(world) end)
+        {:ok, world} = DynamicSupervisor.start_child(WorldSupervisor, child_specs)
+        [world]
 
-      not_full =
-        worlds
-          |> Enum.filter(fn world -> !World.finished?(world) end)
-          |> Enum.filter(fn world -> !World.full?(world) end)
-          |> spawn_if_necessary.()
-
-      # Clean finished
-      worlds
-        |> Enum.filter(fn world -> World.finished?(world) end)
-        |> Enum.map(fn world -> World.stop(world) end)
-
-      selected_world = List.first not_full
-
-      {:ok, name} = ClientProxyMaker.new(ClientProxyMaker, selected_world, cli_addr)
-
-      new_worlds = Enum.concat(full, not_full)
-
-      {{:ok, {name, node()}}, new_worlds}
+      v ->
+        Logger.info("GameMaker: Using an existing world")
+        v
     end
 
+    full =
+      worlds
+      |> Enum.filter(fn world -> !World.finished?(world) end)
+      |> Enum.filter(fn world -> World.full?(world) end)
+
+    not_full =
+      worlds
+      |> Enum.filter(fn world -> !World.finished?(world) end)
+      |> Enum.filter(fn world -> !World.full?(world) end)
+      |> spawn_if_necessary.()
+
+    # Clean finished
+    worlds
+    |> Enum.filter(fn world -> World.finished?(world) end)
+    |> Enum.map(fn world -> World.stop(world) end)
+
+    selected_world = List.first(not_full)
+
+    {:ok, name} = ClientProxyMaker.new(ClientProxyMaker, selected_world, cli_addr)
+
+    new_worlds = Enum.concat(full, not_full)
+
+    {{:ok, {name, node()}}, new_worlds}
+  end
+
   @impl true
-  def handle_info(msg, state) do
+  def handle_info(_msg, state) do
     require Logger
-    Logger.debug("Unexpected message in GameMaker: #{msg}")
     {:noreply, state}
   end
 end
