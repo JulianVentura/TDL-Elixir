@@ -19,7 +19,7 @@ defmodule GameMaker do
 
   @impl true
   def init(:ok) do
-    max_clients = Application.get_env(:server, :session_max_players)
+    max_clients = Application.get_env(:server, :max_clients)
     Logger.info("Starting GameMaker with #{max_clients} client capacity")
     {:ok, _} = ClientProxyMaker.start_link(max_clients)
     {:ok, []}

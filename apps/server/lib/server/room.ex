@@ -45,9 +45,9 @@ defmodule Room do
     GenServer.call(room, {:move, player, direction, room})
   end
 
-  @spec add_enemie(id, id) :: atom()
-  def add_enemie(room, enemie) do
-    GenServer.cast(room, {:add_enemie, enemie})
+  @spec add_enemy(id, id) :: atom()
+  def add_enemy(room, enemy) do
+    GenServer.cast(room, {:add_enemy, enemy})
   end
 
   @spec add_player(id, id) :: atom()
@@ -127,7 +127,13 @@ defmodule Room do
           |> List.first() ||
             {nil, nil}
 
-        _broadcast_game_state(true, player_turn, players, enemies, world)
+        BroadCaster.broadcast_game_state(
+          :without_player_state,
+          player_turn,
+          players,
+          enemies,
+          world
+        )
 
         if type == "safe" do
           Player.heal(player)
@@ -161,7 +167,15 @@ defmodule Room do
 
         new_state = _remove_player(player, state)
         Room.add_player(next_room, player)
-        _broadcast_game_state(true, nil, new_state.players, new_state.enemies, new_state.world)
+
+        BroadCaster.broadcast_game_state(
+          :without_player_state,
+          nil,
+          new_state.players,
+          new_state.enemies,
+          new_state.world
+        )
+
         new_state
       else
         state
@@ -191,7 +205,7 @@ defmodule Room do
   end
 
   @impl true
-  def handle_cast({:add_enemie, enemie}, state) do
+  def handle_cast({:add_enemy, enemy}, state) do
     %{
       enemies: enemies,
       players: players,
@@ -201,14 +215,14 @@ defmodule Room do
       monitor: monitor
     } = state
 
-    enemies = enemies ++ [enemie]
-    monitor = Monitor.monitor(monitor, enemie)
+    enemies = enemies ++ [enemy]
+    monitor = Monitor.monitor(monitor, enemy)
 
     turn_order =
       Map.put(
         turn_order,
-        enemie,
-        turn == :enemie
+        enemy,
+        turn == :enemy
       )
 
     {player_turn, _} =
@@ -218,8 +232,8 @@ defmodule Room do
       |> List.first() ||
         {nil, nil}
 
-    _broadcast_game_state(
-      true,
+    BroadCaster.broadcast_game_state(
+      :without_player_state,
       player_turn,
       players,
       enemies,
@@ -254,7 +268,7 @@ defmodule Room do
 
     monitor = Monitor.demonitor(monitor, pid)
 
-    Logger.info("Room #{inspect(self())}: DOWN message received, player/enemie #{inspect(pid)}")
+    Logger.info("Room #{inspect(self())}: DOWN message received, player/enemy #{inspect(pid)}")
 
     if pid in players do
       World.remove_player(world, pid)
@@ -267,7 +281,7 @@ defmodule Room do
           players,
           enemies,
           if turn == :player do
-            :enemie
+            :enemy
           else
             :player
           end,
@@ -290,7 +304,13 @@ defmodule Room do
       |> List.first() ||
         {nil, nil}
 
-    _broadcast_game_state(true, player_turn, players, enemies, state.world)
+    BroadCaster.broadcast_game_state(
+      :without_player_state,
+      player_turn,
+      players,
+      enemies,
+      state.world
+    )
 
     new_state2 = %{
       new_state
@@ -322,7 +342,7 @@ defmodule Room do
 
     cond do
       attacker in players and defender in enemies ->
-        _attack_enemie(attacker, defender, amount, state, room, stance)
+        _attack_enemy(attacker, defender, amount, state, room, stance)
 
       attacker in enemies and defender in players ->
         {{:ok, "No Error"}, _attack_player(attacker, defender, amount, state, room)}
@@ -332,7 +352,7 @@ defmodule Room do
     end
   end
 
-  def _attack_enemie(player, enemie, amount, state, room, stance) do
+  def _attack_enemy(player, enemy, amount, state, room, stance) do
     %{
       turn: turn,
       turn_order: turn_order,
@@ -341,24 +361,24 @@ defmodule Room do
 
     if turn == :player and turn_order[player] do
       Logger.info(
-        "Room #{inspect(self())}: Player #{inspect(player)} is attacking enemie #{inspect(enemie)} with #{inspect(amount)}"
+        "Room #{inspect(self())}: Player #{inspect(player)} is attacking enemy #{inspect(enemy)} with #{inspect(amount)}"
       )
 
-      new_state = _attack(enemie, player, :player, amount, state, stance)
+      new_state = _attack(enemy, player, :player, amount, state, stance)
 
       %{
         enemies: enemies
       } = new_state
 
-      GenServer.cast(room, {:change_turn, player, players, enemies, :enemie})
+      GenServer.cast(room, {:change_turn, player, players, enemies, :enemy})
       {{:ok, "No Error"}, new_state}
     else
       {{:error, "Its not your turn"}, state}
     end
   end
 
-  def _attack_player(enemie, player, amount, state, room) do
-    Logger.info("Attack Player #{inspect(Enemie.get_stance(enemie))}")
+  def _attack_player(enemy, player, amount, state, room) do
+    Logger.info("Attack Player #{inspect(Enemy.get_stance(enemy))}")
 
     %{
       turn: turn,
@@ -367,36 +387,36 @@ defmodule Room do
     } = state
 
     Logger.info(
-      "Room #{inspect(self())}: enemie #{inspect(enemie)} is attacking player #{inspect(player)} with #{inspect(amount)}"
+      "Room #{inspect(self())}: enemy #{inspect(enemy)} is attacking player #{inspect(player)} with #{inspect(amount)}"
     )
 
-    if turn == :enemie and turn_order[enemie] do
-      new_state = _attack(enemie, player, :enemie, amount, state, Enemie.get_stance(enemie))
+    if turn == :enemy and turn_order[enemy] do
+      new_state = _attack(enemy, player, :enemy, amount, state, Enemy.get_stance(enemy))
 
       %{
         players: players
       } = new_state
 
-      GenServer.cast(room, {:change_turn, enemie, enemies, players, :player})
+      GenServer.cast(room, {:change_turn, enemy, enemies, players, :player})
       new_state
     else
       state
     end
   end
 
-  def _attack(enemie, player, direction, amount, state, stance) do
+  def _attack(enemy, player, direction, amount, state, stance) do
     Logger.info("Room _attack #{inspect(stance)}")
-    # Si direction es player, entonces player ataca a enemie, si no, enemie ataca a player
+    # Si direction es player, entonces player ataca a enemy, si no, enemy ataca a player
     case direction do
       :player ->
-        health = Enemie.be_attacked(enemie, amount, stance)
+        health = Enemy.be_attacked(enemy, amount, stance)
 
         case health do
-          0 -> _remove_enemie(enemie, state)
+          0 -> _remove_enemy(enemy, state)
           _ -> state
         end
 
-      :enemie ->
+      :enemy ->
         health = Player.be_attacked(player, amount, stance)
         Logger.info("Health #{inspect(health)}")
 
@@ -431,17 +451,25 @@ defmodule Room do
       case {change_turn, turn} do
         {true, :player} ->
           Logger.info("Broadcast true :player")
-          _broadcast_game_state(false, List.first(defendees), defendees, attackees, state.world)
+
+          BroadCaster.broadcast_game_state(
+            :with_player_state,
+            List.first(defendees),
+            defendees,
+            attackees,
+            state.world
+          )
+
           Map.put(turn_order, List.first(defendees), true)
 
-        {true, :enemie} ->
-          Logger.info("Broadcast true :enemie")
+        {true, :enemy} ->
+          Logger.info("Broadcast true :enemy")
 
-          _broadcast_game_state(
+          BroadCaster.broadcast_game_state(
             if is_dead do
               attacker
             else
-              false
+              :with_player_state
             end,
             List.first(defendees),
             attackees,
@@ -450,12 +478,12 @@ defmodule Room do
           )
 
           if not Enum.empty?(defendees) do
-            enemie = List.first(defendees)
+            enemy = List.first(defendees)
 
             %{player: player_to_attack, amount: amount} =
-              Enemie.choose_player_to_attack(enemie, attackees)
+              Enemy.choose_player_to_attack(enemy, attackees)
 
-            GenServer.cast(self(), {:attack, enemie, player_to_attack, amount, self()})
+            GenServer.cast(self(), {:attack, enemy, player_to_attack, amount, self()})
           end
 
           for d <- defendees, into: turn_order, do: {d, true}
@@ -469,26 +497,26 @@ defmodule Room do
               Logger.info("Broadcast false :player")
 
               %{player: player_to_attack, amount: amount} =
-                Enemie.choose_player_to_attack(next_attacker, defendees)
+                Enemy.choose_player_to_attack(next_attacker, defendees)
 
               GenServer.cast(self(), {:attack, next_attacker, player_to_attack, amount, self()})
 
-              _broadcast_game_state(
-                false,
+              BroadCaster.broadcast_game_state(
+                :with_player_state,
                 next_attacker,
                 defendees,
                 attackees,
                 state.world
               )
 
-            :enemie ->
-              Logger.info("Broadcast false :enemie")
+            :enemy ->
+              Logger.info("Broadcast false :enemy")
 
-              _broadcast_game_state(
+              BroadCaster.broadcast_game_state(
                 if is_dead do
                   attacker
                 else
-                  false
+                  :with_player_state
                 end,
                 next_attacker,
                 attackees,
@@ -509,60 +537,21 @@ defmodule Room do
     new_state
   end
 
-  def _broadcast_game_state(true, turn, players, enemies, world) do
-    Logger.info("Broadcasting game state with players #{inspect(players)}")
-
-    new_state = %{
-      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
-      players: players,
-      rooms: World.get_neighbours(world, self()),
-      turn: turn
-    }
-
-    Enum.map(players, fn player -> Player.receive_state(player, new_state, true) end)
-  end
-
-  def _broadcast_game_state(false, turn, players, enemies, world) do
-    Logger.info("Broadcasting game state with players #{inspect(players)}")
-
-    new_state = %{
-      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
-      players: Enum.map(players, fn player -> {player, Player.get_state(player)} end),
-      rooms: World.get_neighbours(world, self()),
-      turn: turn
-    }
-
-    Enum.map(players, fn player -> Player.receive_state(player, new_state, false) end)
-  end
-
-  def _broadcast_game_state(dead_player, turn, players, enemies, world) do
-    Logger.info("Broadcasting game state 2 with players #{inspect(players)}")
-
-    new_state = %{
-      enemies: Enum.map(enemies, fn enemie -> {enemie, Enemie.get_state(enemie)} end),
-      players: players -- [dead_player],
-      rooms: World.get_neighbours(world, self()),
-      turn: turn
-    }
-
-    Enum.map(players, fn player -> Player.receive_state(player, new_state, true) end)
-  end
-
-  def _remove_enemie(enemie, state) do
+  def _remove_enemy(enemy, state) do
     %{
       enemies: enemies,
       turn_order: turn_order,
       monitor: monitor
     } = state
 
-    Enemie.stop(enemie)
+    Enemy.stop(enemy)
 
-    monitor = Monitor.demonitor(monitor, enemie)
+    monitor = Monitor.demonitor(monitor, enemy)
 
     %State{
       state
-      | turn_order: Map.delete(turn_order, enemie),
-        enemies: List.delete(enemies, enemie),
+      | turn_order: Map.delete(turn_order, enemy),
+        enemies: List.delete(enemies, enemy),
         monitor: monitor
     }
   end
